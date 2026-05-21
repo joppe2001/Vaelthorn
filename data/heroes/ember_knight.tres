@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1_hero"]
+
+[resource]
+script = ExtResource("1_hero")
+id = "ember_knight"
+display_name = "Ember Knight"
+lore = "Forged in the calderas of the southern reach, sworn to burn back the dark."
+element = 0
+class_type = 0
+base_hp = 1200
+base_atk = 180
+base_def = 70
+base_spd = 110
+base_crit_rate = 0.15
+base_crit_dmg = 1.6
+base_acc = 0.95
+base_eva = 0.05
+base_luk = 60
+base_res = 0.0
+skill_ids = PackedStringArray("basic_attack", "flame_slash")
+ultimate_id = ""
+passive_id = ""
+sprite_color = Color(0.97, 0.55, 0.22, 1)

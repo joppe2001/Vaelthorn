@@ -15,3 +15,7 @@ func _process(_delta: float) -> void:
 
 func _on_back_pressed() -> void:
 	Game.change_scene("res://scenes/title/title.tscn")
+
+
+func _on_battle_pressed() -> void:
+	Game.change_scene("res://scenes/battle/battle.tscn")

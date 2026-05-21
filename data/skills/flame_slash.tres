@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/skill_data.gd" id="1_skill"]
+
+[resource]
+script = ExtResource("1_skill")
+id = "flame_slash"
+skill_name = "Flame Slash"
+description = "A fire-aligned slash. 2.0x power, ignores element inheritance."
+target_type = 0
+element = 0
+power = 2.0
+hits = 1
+cooldown = 0

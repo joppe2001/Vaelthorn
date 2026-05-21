@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/skill_data.gd" id="1_skill"]
+
+[resource]
+script = ExtResource("1_skill")
+id = "basic_attack"
+skill_name = "Strike"
+description = "A basic attack that inherits the user's element."
+target_type = 0
+element = -1
+power = 1.0
+hits = 1
+cooldown = 0

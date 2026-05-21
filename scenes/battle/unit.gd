@@ -1,11 +1,13 @@
 extends Node2D
 ## Visual representation of a combatant in the battle scene.
 ##
-## Phase 1.5b: dual-mode sprite —
-##   - if `idle_frames` is passed to bind(): show AnimatedSprite2D with real art
-##   - otherwise: fall back to the Polygon2D placeholder
-## Both children live under SpriteHolder so the idle bob + scale-punch tween
-## affects whichever is visible.
+## Phase 2a:
+##   - Hosts a per-unit StatusManager (active Burn/Stun/buffs/debuffs).
+##   - Renders status icons in a row above the name label.
+##   - Damage flash + scale punch + position bump still work on either
+##     Polygon2D (placeholder enemies) or AnimatedSprite2D (real sprites).
+
+const STATUS_ICON_SCENE := preload("res://scenes/battle/status_icon.tscn")
 
 @onready var _sprite_holder: Node2D = $SpriteHolder
 @onready var _sprite: Polygon2D = $SpriteHolder/Sprite
@@ -14,19 +16,24 @@ extends Node2D
 @onready var _name_label: Label = $UIRoot/NameLabel
 @onready var _hp_bar: ProgressBar = $UIRoot/HPBar
 @onready var _hp_label: Label = $UIRoot/HPLabel
+@onready var _status_row: HBoxContainer = $UIRoot/StatusRow
 
 var _base_color: Color = Color.WHITE
 var _t: float = 0.0
 var _using_anim_sprite: bool = false
+var _icons_by_status: Dictionary = {}   ## status_id -> StatusIcon node
+
+## StatusManager owned by this unit. Battle scene reads/mutates via the
+## helper methods below.
+var statuses: StatusManager = StatusManager.new()
 
 
 func _ready() -> void:
-	# Slightly random phase so player + enemy don't bob in lockstep
 	_t = randf() * TAU
 
 
 func _process(delta: float) -> void:
-	# Gentle idle bob — sin wave, 3-pixel amplitude, ~2s period.
+	# Gentle idle bob — sin wave, 3-pixel amplitude
 	_t += delta * 2.4
 	_sprite_holder.position.y = sin(_t) * 3.0
 
@@ -62,7 +69,6 @@ func set_hp(current: int, max_hp: int) -> void:
 	_hp_label.text = "%d / %d" % [current, max_hp]
 	_update_hp_color(current, max_hp)
 
-	# Hit flash on whichever sprite is active
 	var flash := create_tween()
 	if _using_anim_sprite:
 		flash.tween_property(_anim_sprite, "modulate", Color(1.6, 1.6, 1.6, 1.0), 0.04)
@@ -71,15 +77,47 @@ func set_hp(current: int, max_hp: int) -> void:
 		flash.tween_property(_sprite, "color", Color(1.4, 1.4, 1.4, 1.0), 0.04)
 		flash.tween_property(_sprite, "color", _base_color, 0.18)
 
-	# Scale punch on the sprite holder (affects both children equally)
 	var punch := create_tween()
 	punch.tween_property(_sprite_holder, "scale", Vector2(1.06, 0.94), 0.06)
 	punch.tween_property(_sprite_holder, "scale", Vector2(1.0, 1.0), 0.12)
 
-	# Position bump on the unit root
 	var bump := create_tween()
 	bump.tween_property(self, "position:x", position.x + 8, 0.06)
 	bump.tween_property(self, "position:x", position.x, 0.10)
+
+
+# ─── Status icon management ──────────────────────────────────────────
+
+func add_status(status_id: String, duration: int, power: float, data: StatusEffectData) -> void:
+	statuses.add(status_id, duration, power, data)
+	_refresh_status_icons()
+
+
+func remove_status(status_id: String) -> void:
+	statuses.remove(status_id)
+	_refresh_status_icons()
+
+
+func refresh_status_durations() -> void:
+	_refresh_status_icons()
+
+
+func _refresh_status_icons() -> void:
+	# Remove icons for statuses no longer active
+	for sid in _icons_by_status.keys():
+		if not statuses.has(sid):
+			_icons_by_status[sid].queue_free()
+			_icons_by_status.erase(sid)
+	# Add or update icons for active statuses
+	for sid in statuses.all_ids():
+		var entry = statuses.active[sid]
+		if _icons_by_status.has(sid):
+			_icons_by_status[sid].set_turns(entry.remaining_turns)
+		else:
+			var icon := STATUS_ICON_SCENE.instantiate()
+			_status_row.add_child(icon)
+			icon.bind(entry.data, entry.remaining_turns)
+			_icons_by_status[sid] = icon
 
 
 func _update_hp_color(current: int, max_hp: int) -> void:

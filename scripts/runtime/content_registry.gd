@@ -11,6 +11,7 @@ var weapons: Dictionary = {}  ## id -> WeaponData
 var enemies: Dictionary = {}  ## id -> EnemyData
 var items: Dictionary = {}    ## id -> ItemData
 var stages: Dictionary = {}   ## id -> StageData
+var statuses: Dictionary = {} ## id -> StatusEffectData
 
 
 func _ready() -> void:
@@ -20,13 +21,15 @@ func _ready() -> void:
 	_load_all("res://data/enemies/", enemies)
 	_load_all("res://data/items/", items)
 	_load_all("res://data/dungeons/", stages)
+	_load_all("res://data/status/", statuses)
 	print("[ContentRegistry] loaded:",
 		" heroes=", heroes.size(),
 		" skills=", skills.size(),
 		" weapons=", weapons.size(),
 		" enemies=", enemies.size(),
 		" items=", items.size(),
-		" stages=", stages.size())
+		" stages=", stages.size(),
+		" statuses=", statuses.size())
 
 
 func get_hero(id: String) -> Resource:
@@ -43,6 +46,10 @@ func get_weapon(id: String) -> Resource:
 
 func get_enemy(id: String) -> Resource:
 	return enemies.get(id)
+
+
+func get_status(id: String) -> Resource:
+	return statuses.get(id)
 
 
 ## Recursively load all .tres files in a folder.

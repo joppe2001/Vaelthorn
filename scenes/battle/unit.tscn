@@ -41,23 +41,30 @@ scale = Vector2(4, 4)
 
 [node name="UIRoot" type="Control" parent="."]
 offset_left = -120.0
-offset_top = -262.0
+offset_top = -296.0
 offset_right = 120.0
 offset_bottom = -202.0
 mouse_filter = 2
 
-[node name="NameLabel" type="Label" parent="UIRoot"]
+[node name="StatusRow" type="HBoxContainer" parent="UIRoot"]
 offset_right = 240.0
-offset_bottom = 24.0
+offset_bottom = 28.0
+alignment = 1
+theme_override_constants/separation = 4
+
+[node name="NameLabel" type="Label" parent="UIRoot"]
+offset_top = 34.0
+offset_right = 240.0
+offset_bottom = 58.0
 text = "Unit"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 
 [node name="HPBar" type="ProgressBar" parent="UIRoot"]
-offset_top = 30.0
+offset_top = 64.0
 offset_right = 240.0
-offset_bottom = 54.0
+offset_bottom = 88.0
 theme_override_styles/background = SubResource("StyleBox_HPBg")
 theme_override_styles/fill = SubResource("StyleBox_HPFill")
 max_value = 100.0
@@ -65,9 +72,9 @@ value = 100.0
 show_percentage = false
 
 [node name="HPLabel" type="Label" parent="UIRoot"]
-offset_top = 30.0
+offset_top = 64.0
 offset_right = 240.0
-offset_bottom = 54.0
+offset_bottom = 88.0
 text = "100 / 100"
 horizontal_alignment = 1
 vertical_alignment = 1

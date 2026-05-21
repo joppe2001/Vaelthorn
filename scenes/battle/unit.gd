@@ -21,6 +21,10 @@ const STATUS_ICON_SCENE := preload("res://scenes/battle/status_icon.tscn")
 @onready var _hp_bar: ProgressBar = $UIRoot/HPBar
 @onready var _hp_label: Label = $UIRoot/HPLabel
 @onready var _status_row: HBoxContainer = $UIRoot/StatusRow
+
+# Created programmatically in _ensure_ultimate_gauge() so it survives Godot's
+# .tscn autosaves while the scene is open in the editor.
+var _ultimate_gauge: ProgressBar
 @onready var _target_marker: Polygon2D = $TargetMarker
 @onready var _active_marker: Polygon2D = $ActiveMarker
 @onready var _click_area: Area2D = $ClickArea
@@ -34,11 +38,73 @@ var _is_dead: bool = false
 var _is_selected: bool = false
 
 var statuses: StatusManager = StatusManager.new()
+var _ultimate_value: float = 0.0
+
+
+# ─── Ultimate gauge ──────────────────────────────────────────────────
+
+func add_ultimate(amount: float) -> void:
+	set_ultimate(_ultimate_value + amount)
+
+
+func set_ultimate(value: float) -> void:
+	_ultimate_value = clamp(value, 0.0, 100.0)
+	if _ultimate_gauge:
+		_ultimate_gauge.value = _ultimate_value
+
+
+func reset_ultimate() -> void:
+	set_ultimate(0.0)
+
+
+func is_ultimate_ready() -> bool:
+	return _ultimate_value >= 100.0
+
+
+## Hide the gauge bar entirely. Used for enemies (they don't have ultimates).
+func set_ultimate_visible(is_visible: bool) -> void:
+	if _ultimate_gauge:
+		_ultimate_gauge.visible = is_visible
 
 
 func _ready() -> void:
 	_t = randf() * TAU
 	_click_area.input_event.connect(_on_click_area_input)
+	_ensure_ultimate_gauge()
+
+
+func _ensure_ultimate_gauge() -> void:
+	var root: Control = $UIRoot
+	if root.has_node("UltimateGauge"):
+		_ultimate_gauge = root.get_node("UltimateGauge")
+		return
+	var bar := ProgressBar.new()
+	bar.name = "UltimateGauge"
+	bar.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	bar.offset_left = 52
+	bar.offset_top = 82
+	bar.offset_right = 188
+	bar.offset_bottom = 90
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.max_value = 100.0
+	bar.value = 0.0
+	bar.show_percentage = false
+
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.07, 0.07, 0.12, 1)
+	bg_style.border_color = Color(0.3, 0.3, 0.4, 1)
+	bg_style.border_width_left = 1
+	bg_style.border_width_top = 1
+	bg_style.border_width_right = 1
+	bg_style.border_width_bottom = 1
+	bar.add_theme_stylebox_override("background", bg_style)
+
+	var fill_style := StyleBoxFlat.new()
+	fill_style.bg_color = Color(0.976, 0.78, 0.31, 1)
+	bar.add_theme_stylebox_override("fill", fill_style)
+
+	root.add_child(bar)
+	_ultimate_gauge = bar
 
 
 func _process(delta: float) -> void:

@@ -44,6 +44,7 @@ const ENEMY_TINTS := [
 @onready var _popup_layer: Node2D = $PopupLayer
 @onready var _camera: Camera2D = $Camera
 @onready var _actions_hbox: HBoxContainer = $UI/ActionPanel/Actions
+@onready var _ult_btn: Button = $UI/ActionPanel/Actions/UltBtn
 
 signal _player_action_done
 
@@ -108,6 +109,7 @@ func _ready() -> void:
 		var unit: Node2D = _enemy_units[i]
 		var tint: Color = ENEMY_TINTS[i % ENEMY_TINTS.size()]
 		unit.bind("%s %d" % [_enemy_template.display_name, i + 1], tint, int(stats.hp))
+		unit.set_ultimate_visible(false)  # enemies don't have ultimates
 		var captured_idx := i
 		unit.clicked.connect(func(_u: Node2D): _on_enemy_clicked(captured_idx))
 		unit.set_targetable(true)
@@ -131,6 +133,9 @@ func _setup_skill_buttons() -> void:
 		var idx := i
 		btn.pressed.connect(func(): _on_skill_pressed(idx))
 		btn.visible = false   # populated per-active-hero at turn start
+	_ult_btn.pressed.connect(_on_ult_pressed)
+	_ult_btn.disabled = true
+	_ult_btn.visible = false
 
 
 func _register_turn_order_units() -> void:
@@ -341,12 +346,28 @@ func _populate_skill_buttons_for_hero(idx: int) -> void:
 			btn.disabled = true
 		else:
 			btn.visible = false
+	# Ultimate button
+	if hero_data.ultimate_id != "":
+		var ult: SkillData = ContentRegistry.get_skill(hero_data.ultimate_id)
+		if ult != null:
+			_ult_btn.text = ult.skill_name
+			_ult_btn.tooltip_text = ult.description
+			_ult_btn.visible = true
+		else:
+			_ult_btn.visible = false
+	else:
+		_ult_btn.visible = false
 
 
 func _set_actions_enabled(enabled: bool) -> void:
 	for btn in _skill_buttons:
 		if btn.visible:
 			btn.disabled = not enabled
+	if _ult_btn.visible and _active_hero_idx >= 0:
+		var ready: bool = _hero_units[_active_hero_idx].is_ultimate_ready()
+		_ult_btn.disabled = not (enabled and ready)
+	else:
+		_ult_btn.disabled = true
 
 
 func _on_skill_pressed(idx: int) -> void:
@@ -360,62 +381,104 @@ func _on_skill_pressed(idx: int) -> void:
 	if skill == null:
 		push_error("[Battle] missing skill: " + skill_id)
 		_set_actions_enabled(true); return
-	await _hero_uses(skill_id, _active_hero_idx)
+	await _hero_uses_skill(skill, _active_hero_idx)
 	var cost: float = float(skill.atb_cost) if skill.atb_cost > 0 else DEFAULT_ATB_COST
 	_atb_heroes[_active_hero_idx] = max(0.0, _atb_heroes[_active_hero_idx] - cost)
 	_refresh_turn_order_bar()
 	_player_action_done.emit()
 
 
-func _hero_uses(skill_id: String, hero_idx: int) -> void:
-	var skill: SkillData = ContentRegistry.get_skill(skill_id)
-	if skill == null: return
+func _on_ult_pressed() -> void:
+	if _battle_over: return
+	if _active_hero_idx < 0: return
+	var hero_data: HeroData = _heroes_data[_active_hero_idx]
+	if hero_data.ultimate_id == "": return
+	var hero_unit: Node2D = _hero_units[_active_hero_idx]
+	if not hero_unit.is_ultimate_ready(): return
+	var ult: SkillData = ContentRegistry.get_skill(hero_data.ultimate_id)
+	if ult == null:
+		push_error("[Battle] missing ultimate: " + hero_data.ultimate_id); return
+	_set_actions_enabled(false)
+	print("[Battle] %s -> ULTIMATE %s" % [_hero_id(_active_hero_idx), ult.id])
+	# Brief dramatic pulse on the caster before the swing
+	var hero_idx := _active_hero_idx
+	var caster := _hero_units[hero_idx]
+	var pre := create_tween()
+	pre.tween_property(caster, "scale", Vector2(1.18, 1.18), 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pre.tween_property(caster, "scale", Vector2(1.0, 1.0), 0.16)
+	await get_tree().create_timer(0.30).timeout
+	await _hero_uses_skill(ult, hero_idx)
+	var cost: float = float(ult.atb_cost) if ult.atb_cost > 0 else DEFAULT_ATB_COST
+	_atb_heroes[hero_idx] = max(0.0, _atb_heroes[hero_idx] - cost)
+	caster.reset_ultimate()
+	_refresh_turn_order_bar()
+	_player_action_done.emit()
 
+
+func _hero_uses_skill(skill: SkillData, hero_idx: int) -> void:
+	match skill.target_type:
+		4:  # SELF
+			await _resolve_skill_self(skill, hero_idx)
+		1:  # ENEMY_ALL
+			await _resolve_skill_enemy_all(skill, hero_idx)
+		_:  # ENEMY_SINGLE (default)
+			if _enemies_hp[_selected_enemy_idx] <= 0:
+				_select_enemy(0)
+				if _enemies_hp[_selected_enemy_idx] <= 0: return
+			await _resolve_skill_enemy_single(skill, hero_idx, _selected_enemy_idx)
+
+
+func _resolve_skill_self(skill: SkillData, hero_idx: int) -> void:
 	var hero_unit: Node2D = _hero_units[hero_idx]
 	var hero_stats: Dictionary = _heroes_stats[hero_idx]
-	var attacker_id: String = _hero_id(hero_idx)
-
-	var is_self: bool = skill.target_type == 4
-	var target_idx: int
-	var target_stats: Dictionary
-	var target_id: String
-	var target_unit: Node2D
-	var target_is_hero: bool
-
-	if is_self:
-		target_idx = hero_idx
-		target_stats = hero_stats
-		target_id = attacker_id
-		target_unit = hero_unit
-		target_is_hero = true
-	else:
-		if _enemies_hp[_selected_enemy_idx] <= 0:
-			_select_enemy(0)
-			if _enemies_hp[_selected_enemy_idx] <= 0: return
-		target_idx = _selected_enemy_idx
-		target_stats = _enemies_stats[target_idx]
-		target_id = _enemy_id(target_idx)
-		target_unit = _enemy_units[target_idx]
-		target_is_hero = false
-
-	if not is_self:
-		_lunge(hero_unit, target_unit.global_position)
-		await get_tree().create_timer(LUNGE_OUT).timeout
-	else:
-		var puff := create_tween()
-		puff.tween_property(hero_unit, "scale", Vector2(1.06, 1.06), 0.10)
-		puff.tween_property(hero_unit, "scale", Vector2(1.0, 1.0), 0.18)
-		await get_tree().create_timer(0.15).timeout
-
+	var puff := create_tween()
+	puff.tween_property(hero_unit, "scale", Vector2(1.06, 1.06), 0.10)
+	puff.tween_property(hero_unit, "scale", Vector2(1.0, 1.0), 0.18)
+	await get_tree().create_timer(0.15).timeout
 	var attacker_eff := _effective_stats(hero_stats, hero_unit.statuses)
-	var target_eff := _effective_stats(target_stats, target_unit.statuses)
+	var target_eff := _effective_stats(hero_stats, hero_unit.statuses)
+	await _resolve_skill(skill, attacker_eff, target_eff, _hero_id(hero_idx), _hero_id(hero_idx), hero_unit, hero_idx, true)
+	await get_tree().create_timer(0.45).timeout
 
-	await _resolve_skill(skill, attacker_eff, target_eff, attacker_id, target_id, target_unit, target_idx, target_is_hero)
 
-	if not is_self:
-		await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
-	else:
-		await get_tree().create_timer(0.45).timeout
+func _resolve_skill_enemy_single(skill: SkillData, hero_idx: int, target_idx: int) -> void:
+	var hero_unit: Node2D = _hero_units[hero_idx]
+	var hero_stats: Dictionary = _heroes_stats[hero_idx]
+	var target_unit: Node2D = _enemy_units[target_idx]
+	_lunge(hero_unit, target_unit.global_position)
+	await get_tree().create_timer(LUNGE_OUT).timeout
+	var attacker_eff := _effective_stats(hero_stats, hero_unit.statuses)
+	var target_eff := _effective_stats(_enemies_stats[target_idx], target_unit.statuses)
+	await _resolve_skill(skill, attacker_eff, target_eff,
+		_hero_id(hero_idx), _enemy_id(target_idx), target_unit, target_idx, false)
+	await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
+
+
+func _resolve_skill_enemy_all(skill: SkillData, hero_idx: int) -> void:
+	var hero_unit: Node2D = _hero_units[hero_idx]
+	var hero_stats: Dictionary = _heroes_stats[hero_idx]
+	var alive_idxs: Array[int] = []
+	for i in ENEMY_COUNT:
+		if _enemies_hp[i] > 0:
+			alive_idxs.append(i)
+	if alive_idxs.is_empty(): return
+
+	# Lunge toward centroid of alive enemies for the AoE swing
+	var centroid := Vector2.ZERO
+	for i in alive_idxs:
+		centroid += _enemy_units[i].global_position
+	centroid /= alive_idxs.size()
+	_lunge(hero_unit, centroid)
+	await get_tree().create_timer(LUNGE_OUT).timeout
+
+	# Resolve effects on each alive enemy
+	var attacker_eff := _effective_stats(hero_stats, hero_unit.statuses)
+	for i in alive_idxs:
+		var target_unit: Node2D = _enemy_units[i]
+		var target_eff := _effective_stats(_enemies_stats[i], target_unit.statuses)
+		await _resolve_skill(skill, attacker_eff, target_eff,
+			_hero_id(hero_idx), _enemy_id(i), target_unit, i, false)
+	await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
 
 
 # ─── Enemy turn ──────────────────────────────────────────────────────
@@ -483,14 +546,17 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 	match result.get("kind", "none"):
 		"damage":
 			var amount: int = int(result.damage)
+			var target_max_hp: int
 			if target_is_hero:
 				_heroes_hp[target_idx] = max(0, _heroes_hp[target_idx] - amount)
-				target_unit.set_hp(_heroes_hp[target_idx], int(_heroes_stats[target_idx].hp))
+				target_max_hp = int(_heroes_stats[target_idx].hp)
+				target_unit.set_hp(_heroes_hp[target_idx], target_max_hp)
 				if _heroes_hp[target_idx] <= 0:
 					target_unit.set_dead(true)
 			else:
 				_enemies_hp[target_idx] = max(0, _enemies_hp[target_idx] - amount)
-				target_unit.set_hp(_enemies_hp[target_idx], int(_enemies_stats[target_idx].hp))
+				target_max_hp = int(_enemies_stats[target_idx].hp)
+				target_unit.set_hp(_enemies_hp[target_idx], target_max_hp)
 				if _enemies_hp[target_idx] <= 0:
 					target_unit.set_dead(true)
 					if _selected_enemy_idx == target_idx:
@@ -505,6 +571,10 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 			else:
 				_shake_camera(3.0, 0.10)
 			EventBus.damage_dealt.emit(attacker_id, target_id, amount, result.is_crit)
+			# Ultimate gauge: attacker gains for damage dealt, target for damage taken.
+			# Only heroes have ult gauges; enemies are ignored.
+			_award_gauge_dealt(attacker_id, amount, target_max_hp)
+			_award_gauge_taken(target_id, target_unit, amount, target_max_hp)
 			print("[Battle] %s -> %s : %d dmg (crit=%s lucky=%s elem=%.1fx)" % [
 				attacker_id, target_id, amount, result.is_crit, result.is_lucky, result.elemental_mult,
 			])
@@ -531,6 +601,23 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 			_spawn_text_popup(target_unit.global_position + Vector2(0, -200), "+%d" % amount, Color(0.4, 0.85, 0.4))
 		"none":
 			pass
+
+
+## Award ultimate gauge to the attacker (a hero) proportional to damage dealt.
+## Capped per-hit. Enemies don't have an ult gauge, silently no-op.
+func _award_gauge_dealt(attacker_id: String, damage: int, target_max_hp: int) -> void:
+	var h_idx: int = _idx_for_hero_id(attacker_id)
+	if h_idx < 0: return
+	var gain: float = clamp(float(damage) / float(max(target_max_hp, 1)) * 60.0, 0.0, 35.0)
+	_hero_units[h_idx].add_ultimate(gain)
+
+
+## Award ultimate gauge to the target unit (a hero) for damage taken.
+func _award_gauge_taken(target_id: String, target_unit: Node2D, damage: int, max_hp: int) -> void:
+	var h_idx: int = _idx_for_hero_id(target_id)
+	if h_idx < 0: return
+	var gain: float = clamp(float(damage) / float(max(max_hp, 1)) * 75.0, 0.0, 40.0)
+	target_unit.add_ultimate(gain)
 
 
 ## Look up the attacker's world X so the slash arc faces the right way

@@ -21,6 +21,7 @@ static func compute(
 	skill_power: float,
 	skill_element: int,
 	rng: SeededRNG,
+	force_crit: bool = false,
 ) -> Dictionary:
 	var atk: float = float(attacker_stats.get("atk", 0))
 	var def: float = float(target_stats.get("def", 0))
@@ -30,7 +31,7 @@ static func compute(
 	var variance: float = rng.range_float(0.95, 1.05)
 
 	var crit_rate: float = float(attacker_stats.get("crit_rate", 0.05))
-	var is_crit: bool = rng.chance(crit_rate)
+	var is_crit: bool = force_crit or rng.chance(crit_rate)
 	var crit_mult: float = float(attacker_stats.get("crit_dmg", 1.5)) if is_crit else 1.0
 
 	var luk: int = int(attacker_stats.get("luk", 0))

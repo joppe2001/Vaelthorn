@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="StatusEffectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/status_effect_data.gd" id="1_status"]
+
+[resource]
+script = ExtResource("1_status")
+id = "def_up"
+display_name = "DEF Up"
+description = "Defense increased by 50%. Incoming damage softened."
+tick_kind = 0
+tick_amount = 0.0
+modifier_kind = 2
+modifier_amount = 50.0
+skip_turn = false
+icon_letter = "D"
+icon_color = Color(0.4, 0.7, 0.95, 1)
+element_tag = 0

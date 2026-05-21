@@ -11,6 +11,9 @@ class_name EffectDamage extends Effect
 @export var power_mult: float = 1.0
 @export var hits: int = 1
 @export var element_override: int = -1
+## Force this damage instance to always crit. Used by Ultimates and
+## "guaranteed crit" passives (e.g. Sentry).
+@export var force_crit: bool = false
 
 
 func apply(ctx: EffectContext) -> Dictionary:
@@ -26,7 +29,7 @@ func apply(ctx: EffectContext) -> Dictionary:
 	var elemental_mult := 1.0
 
 	for _i in hits:
-		var dmg: Dictionary = Damage.compute(ctx.attacker, ctx.target, power_mult, element, ctx.rng)
+		var dmg: Dictionary = Damage.compute(ctx.attacker, ctx.target, power_mult, element, ctx.rng, force_crit)
 		total_damage += int(dmg.damage)
 		if dmg.is_crit:
 			any_crit = true

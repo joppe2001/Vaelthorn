@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SkillData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/skill_data.gd" id="1_skill"]
+[ext_resource type="Script" path="res://scripts/combat/effects/effect_damage.gd" id="2_dmg"]
+
+[sub_resource type="Resource" id="EffectDamage_blitz"]
+script = ExtResource("2_dmg")
+trigger = 0
+power_mult = 4.5
+hits = 1
+element_override = 0
+force_crit = true
+
+[resource]
+script = ExtResource("1_skill")
+id = "crimson_blitz"
+skill_name = "Crimson Blitz"
+description = "ULTIMATE — A blazing, all-or-nothing strike. 4.5x Fire damage, guaranteed crit."
+target_type = 0
+element = 0
+cooldown = 0
+atb_cost = 100
+effects = Array[Effect]([SubResource("EffectDamage_blitz")])

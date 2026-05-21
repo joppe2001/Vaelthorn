@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="SkillData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/skill_data.gd" id="1_skill"]
+[ext_resource type="Script" path="res://scripts/combat/effects/effect_damage.gd" id="2_dmg"]
+[ext_resource type="Script" path="res://scripts/combat/effects/effect_status.gd" id="3_status"]
+
+[sub_resource type="Resource" id="EffectDamage_pyre"]
+script = ExtResource("2_dmg")
+trigger = 0
+power_mult = 2.5
+hits = 1
+element_override = 0
+force_crit = false
+
+[sub_resource type="Resource" id="EffectStatus_pyre_burn"]
+script = ExtResource("3_status")
+trigger = 0
+status_id = "burn"
+duration = 2
+chance = 1.0
+power = 0.0
+
+[resource]
+script = ExtResource("1_skill")
+id = "pyre_breaker"
+skill_name = "Pyre Breaker"
+description = "ULTIMATE — Engulfs all enemies in flame. 2.5x Fire damage. Burns for 2 turns guaranteed."
+target_type = 1
+element = 0
+cooldown = 0
+atb_cost = 100
+effects = Array[Effect]([SubResource("EffectDamage_pyre"), SubResource("EffectStatus_pyre_burn")])

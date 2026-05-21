@@ -48,6 +48,54 @@ content_margin_top = 8.0
 content_margin_right = 12.0
 content_margin_bottom = 8.0
 
+[sub_resource type="StyleBoxFlat" id="StyleBox_UltBtnNormal"]
+bg_color = Color(0.25, 0.18, 0.07, 1)
+border_color = Color(0.976, 0.78, 0.31, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_UltBtnHover"]
+bg_color = Color(0.45, 0.32, 0.12, 1)
+border_color = Color(1, 0.92, 0.4, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_UltBtnDisabled"]
+bg_color = Color(0.12, 0.12, 0.16, 1)
+border_color = Color(0.4, 0.34, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+
 [node name="Battle" type="Node2D"]
 script = ExtResource("1")
 
@@ -131,10 +179,10 @@ theme_override_styles/panel = SubResource("StyleBox_TurnPanel")
 
 [node name="Actions" type="HBoxContainer" parent="UI/ActionPanel"]
 alignment = 1
-theme_override_constants/separation = 22
+theme_override_constants/separation = 16
 
 [node name="SkillBtn0" type="Button" parent="UI/ActionPanel/Actions"]
-custom_minimum_size = Vector2(200, 60)
+custom_minimum_size = Vector2(165, 60)
 text = "Strike"
 theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
 theme_override_styles/hover = SubResource("StyleBox_BtnHover")
@@ -144,7 +192,7 @@ theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
 
 [node name="SkillBtn1" type="Button" parent="UI/ActionPanel/Actions"]
-custom_minimum_size = Vector2(200, 60)
+custom_minimum_size = Vector2(165, 60)
 text = "Flame Slash"
 theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
 theme_override_styles/hover = SubResource("StyleBox_BtnHover")
@@ -154,7 +202,7 @@ theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
 
 [node name="SkillBtn2" type="Button" parent="UI/ActionPanel/Actions"]
-custom_minimum_size = Vector2(200, 60)
+custom_minimum_size = Vector2(165, 60)
 text = "Brace"
 theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
 theme_override_styles/hover = SubResource("StyleBox_BtnHover")
@@ -164,7 +212,7 @@ theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
 
 [node name="SkillBtn3" type="Button" parent="UI/ActionPanel/Actions"]
-custom_minimum_size = Vector2(200, 60)
+custom_minimum_size = Vector2(165, 60)
 text = "Shatter"
 theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
 theme_override_styles/hover = SubResource("StyleBox_BtnHover")
@@ -172,6 +220,18 @@ theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
+
+[node name="UltBtn" type="Button" parent="UI/ActionPanel/Actions"]
+custom_minimum_size = Vector2(165, 60)
+text = "Ultimate"
+theme_override_styles/normal = SubResource("StyleBox_UltBtnNormal")
+theme_override_styles/hover = SubResource("StyleBox_UltBtnHover")
+theme_override_styles/pressed = SubResource("StyleBox_UltBtnNormal")
+theme_override_styles/disabled = SubResource("StyleBox_UltBtnDisabled")
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.976, 0.78, 0.31, 1)
+theme_override_colors/font_hover_color = Color(1, 0.96, 0.55, 1)
+theme_override_colors/font_disabled_color = Color(0.5, 0.42, 0.25, 1)
 
 [node name="EndPanel" type="ColorRect" parent="UI"]
 offset_right = 1280.0

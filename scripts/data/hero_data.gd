@@ -32,5 +32,15 @@ class_name HeroData extends Resource
 ## Optional always-on passive id (Phase 2+).
 @export var passive_id: String = ""
 
-@export_group("Visuals (placeholder until sprite import)")
+@export_group("Visuals")
+## Fallback color tint when no SpriteFrames are set (placeholder Polygon2D).
 @export var sprite_color: Color = Color(0.97, 0.78, 0.31, 1.0)
+## When set, the Unit shows an AnimatedSprite2D using these frames instead of
+## the Polygon2D placeholder. Leave null for entities without art yet.
+@export var idle_frames: SpriteFrames = null
+## Integer scale applied to the AnimatedSprite2D. Must be an integer for
+## pixel-perfect rendering.
+@export var sprite_scale: float = 4.0
+## Y offset of the AnimatedSprite2D relative to the unit's feet (origin).
+## Tune this per hero so the visual feet line up with the ground.
+@export var sprite_y_offset: float = -96.0

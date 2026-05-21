@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="HeroData" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1_hero"]
+[ext_resource type="SpriteFrames" path="res://data/spriteframes/ember_knight_idle.tres" id="2_frames"]
 
 [resource]
 script = ExtResource("1_hero")
@@ -23,3 +24,6 @@ skill_ids = PackedStringArray("basic_attack", "flame_slash")
 ultimate_id = ""
 passive_id = ""
 sprite_color = Color(0.97, 0.55, 0.22, 1)
+idle_frames = ExtResource("2_frames")
+sprite_scale = 4.0
+sprite_y_offset = -96.0

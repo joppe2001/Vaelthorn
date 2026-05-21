@@ -34,6 +34,11 @@ color = Color(0, 0, 0, 0.45)
 polygon = PackedVector2Array(-64, -200, 64, -200, 64, -16, -64, -16)
 color = Color(0.976, 0.78, 0.31, 1)
 
+[node name="AnimatedSprite" type="AnimatedSprite2D" parent="SpriteHolder"]
+visible = false
+position = Vector2(0, -96)
+scale = Vector2(4, 4)
+
 [node name="UIRoot" type="Control" parent="."]
 offset_left = -120.0
 offset_top = -262.0

@@ -53,7 +53,14 @@ func _ready() -> void:
 	_player_hp = int(_player_stats.hp)
 	_enemy_hp = int(_enemy_stats.hp)
 
-	_player_unit.bind(_player_hero.display_name, _player_hero.sprite_color, _player_hp)
+	_player_unit.bind(
+		_player_hero.display_name,
+		_player_hero.sprite_color,
+		_player_hp,
+		_player_hero.idle_frames,
+		_player_hero.sprite_scale,
+		_player_hero.sprite_y_offset,
+	)
 	_enemy_unit.bind(_enemy.display_name, _enemy.sprite_color, _enemy_hp)
 
 	_basic_btn.text = _label_for_skill(_player_hero.skill_ids[0] if _player_hero.skill_ids.size() > 0 else "")

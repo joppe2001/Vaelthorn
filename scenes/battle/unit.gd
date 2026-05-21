@@ -1,11 +1,15 @@
 extends Node2D
-## Visual representation of a combatant in the battle scene.
+## Visual representation of one combatant.
 ##
-## Phase 2a:
-##   - Hosts a per-unit StatusManager (active Burn/Stun/buffs/debuffs).
-##   - Renders status icons in a row above the name label.
-##   - Damage flash + scale punch + position bump still work on either
-##     Polygon2D (placeholder enemies) or AnimatedSprite2D (real sprites).
+## Phase 2d additions:
+##   - clicked signal (Area2D-based hit detection) for targeting UI
+##   - set_selected() toggles the gold chevron marker above the unit
+##   - set_dead() fades the sprite + disables clicks when HP hits 0
+##
+## SpriteHolder hosts both the Polygon2D placeholder and the AnimatedSprite2D
+## (real art). bind() picks which to show via the optional idle_frames arg.
+
+signal clicked(unit: Node2D)
 
 const STATUS_ICON_SCENE := preload("res://scenes/battle/status_icon.tscn")
 
@@ -17,25 +21,34 @@ const STATUS_ICON_SCENE := preload("res://scenes/battle/status_icon.tscn")
 @onready var _hp_bar: ProgressBar = $UIRoot/HPBar
 @onready var _hp_label: Label = $UIRoot/HPLabel
 @onready var _status_row: HBoxContainer = $UIRoot/StatusRow
+@onready var _target_marker: Polygon2D = $TargetMarker
+@onready var _click_area: Area2D = $ClickArea
 
 var _base_color: Color = Color.WHITE
 var _t: float = 0.0
+var _marker_t: float = 0.0
 var _using_anim_sprite: bool = false
-var _icons_by_status: Dictionary = {}   ## status_id -> StatusIcon node
+var _icons_by_status: Dictionary = {}
+var _is_dead: bool = false
+var _is_selected: bool = false
 
-## StatusManager owned by this unit. Battle scene reads/mutates via the
-## helper methods below.
 var statuses: StatusManager = StatusManager.new()
 
 
 func _ready() -> void:
 	_t = randf() * TAU
+	_click_area.input_event.connect(_on_click_area_input)
 
 
 func _process(delta: float) -> void:
-	# Gentle idle bob — sin wave, 3-pixel amplitude
+	# Idle bob
 	_t += delta * 2.4
 	_sprite_holder.position.y = sin(_t) * 3.0
+	# Subtle pulse on the target marker so it's eye-catching
+	if _is_selected:
+		_marker_t += delta * 5.0
+		var pulse: float = 0.85 + sin(_marker_t) * 0.15
+		_target_marker.modulate.a = pulse
 
 
 func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrames = null, sprite_scale: float = 4.0, sprite_y_offset: float = -96.0) -> void:
@@ -86,6 +99,43 @@ func set_hp(current: int, max_hp: int) -> void:
 	bump.tween_property(self, "position:x", position.x, 0.10)
 
 
+# ─── Targeting + death ───────────────────────────────────────────────
+
+func set_selected(selected: bool) -> void:
+	_is_selected = selected
+	_target_marker.visible = selected and not _is_dead
+	if selected:
+		_target_marker.modulate = Color(1, 1, 1, 1)
+		_marker_t = 0.0
+
+
+func set_targetable(can_target: bool) -> void:
+	# Toggle the Area2D pickability — dead enemies stop receiving clicks.
+	_click_area.input_pickable = can_target
+
+
+func set_dead(is_dead: bool) -> void:
+	_is_dead = is_dead
+	if is_dead:
+		_target_marker.visible = false
+		set_targetable(false)
+		var fade := create_tween()
+		fade.set_parallel(true)
+		if _using_anim_sprite:
+			fade.tween_property(_anim_sprite, "modulate:a", 0.35, 0.4)
+		else:
+			fade.tween_property(_sprite, "color:a", 0.35, 0.4)
+		fade.tween_property(_shadow, "modulate:a", 0.15, 0.4)
+	else:
+		set_targetable(true)
+
+
+func _on_click_area_input(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
+	if _is_dead: return
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		clicked.emit(self)
+
+
 # ─── Status icon management ──────────────────────────────────────────
 
 func add_status(status_id: String, duration: int, power: float, data: StatusEffectData) -> void:
@@ -103,12 +153,10 @@ func refresh_status_durations() -> void:
 
 
 func _refresh_status_icons() -> void:
-	# Remove icons for statuses no longer active
 	for sid in _icons_by_status.keys():
 		if not statuses.has(sid):
 			_icons_by_status[sid].queue_free()
 			_icons_by_status.erase(sid)
-	# Add or update icons for active statuses
 	for sid in statuses.all_ids():
 		var entry = statuses.active[sid]
 		if _icons_by_status.has(sid):

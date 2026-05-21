@@ -78,10 +78,16 @@ color = Color(0.02, 0.02, 0.04, 1)
 position = Vector2(640, 360)
 
 [node name="PlayerUnit" parent="." instance=ExtResource("2")]
-position = Vector2(360, 540)
+position = Vector2(300, 540)
 
-[node name="EnemyUnit" parent="." instance=ExtResource("2")]
-position = Vector2(920, 540)
+[node name="EnemyUnit0" parent="." instance=ExtResource("2")]
+position = Vector2(720, 540)
+
+[node name="EnemyUnit1" parent="." instance=ExtResource("2")]
+position = Vector2(900, 540)
+
+[node name="EnemyUnit2" parent="." instance=ExtResource("2")]
+position = Vector2(1080, 540)
 
 [node name="PopupLayer" type="Node2D" parent="."]
 

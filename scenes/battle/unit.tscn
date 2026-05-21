@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/battle/unit.gd" id="1"]
 
@@ -21,6 +21,9 @@ corner_radius_top_right = 1
 corner_radius_bottom_right = 1
 corner_radius_bottom_left = 1
 
+[sub_resource type="RectangleShape2D" id="RectShape_click"]
+size = Vector2(140, 240)
+
 [node name="Unit" type="Node2D"]
 script = ExtResource("1")
 
@@ -39,9 +42,22 @@ visible = false
 position = Vector2(0, -96)
 scale = Vector2(4, 4)
 
+[node name="TargetMarker" type="Polygon2D" parent="."]
+visible = false
+polygon = PackedVector2Array(-18, -310, 18, -310, 0, -288)
+color = Color(0.976, 0.78, 0.31, 1)
+
+[node name="ClickArea" type="Area2D" parent="."]
+input_pickable = true
+monitorable = false
+
+[node name="CollisionShape" type="CollisionShape2D" parent="ClickArea"]
+position = Vector2(0, -110)
+shape = SubResource("RectShape_click")
+
 [node name="UIRoot" type="Control" parent="."]
 offset_left = -120.0
-offset_top = -296.0
+offset_top = -262.0
 offset_right = 120.0
 offset_bottom = -202.0
 mouse_filter = 2

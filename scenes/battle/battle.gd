@@ -1,19 +1,24 @@
 extends Node2D
-## Phase 2c — ATB turn order.
+## Phase 2d — Multi-enemy combat + targeting UI.
 ##
-## Round-based logic is gone. Each unit's ATB gauge fills proportional to
-## its (effective) SPD. The unit whose gauge fills first acts. After acting,
-## its ATB drops by the skill's atb_cost.
+## 1 hero vs N enemies (currently hard-coded to 3 Training Slimes). The ATB
+## scheduler from Phase 2c was already array-based and handles arbitrary N.
+## Player picks a skill, the skill targets the currently SELECTED enemy
+## (click any enemy to change selection; chevron marker on the selected one).
 ##
-## SPD modifiers (from Brace if it ever boosted SPD, or future status types)
-## now meaningfully change turn frequency over the course of a battle.
+## Multi-hero (Phase 2e) mirrors this: the ATB scheduler will get N heroes,
+## enemy AI picks a hero to attack, scene grows another row of units.
 
 const POPUP_SCENE := preload("res://scenes/battle/damage_popup.tscn")
 const SLASH_SCENE := preload("res://scenes/battle/slash_effect.tscn")
 const MAX_SKILL_SLOTS := 4
 
 @onready var _player_unit: Node2D = $PlayerUnit
-@onready var _enemy_unit: Node2D = $EnemyUnit
+@onready var _enemy_units: Array[Node2D] = [
+	$EnemyUnit0,
+	$EnemyUnit1,
+	$EnemyUnit2,
+]
 @onready var _turn_label: Label = $UI/TurnPanel/TurnLabel
 @onready var _turn_order_bar: HBoxContainer = $UI/TurnOrderBar
 @onready var _end_panel: ColorRect = $UI/EndPanel
@@ -24,30 +29,37 @@ const MAX_SKILL_SLOTS := 4
 
 const TEST_HERO_ID := "ember_knight"
 const TEST_ENEMY_ID := "training_slime"
+const ENEMY_COUNT := 3
 
 const LUNGE_DISTANCE := 42.0
 const LUNGE_OUT := 0.12
 const LUNGE_BACK := 0.16
-
 const DEFAULT_ATB_COST := 100.0
+
+# Slight color shifts so 3 identical-data slimes are visually distinct.
+const ENEMY_TINTS := [
+	Color(0.45, 0.85, 0.55, 1),    # mid green
+	Color(0.55, 0.78, 0.42, 1),    # olive green
+	Color(0.40, 0.78, 0.62, 1),    # teal green
+]
 
 signal _player_action_done
 
 var _rng: SeededRNG
 var _player_stats: Dictionary
-var _enemy_stats: Dictionary
+var _enemies_stats: Array[Dictionary] = []
 var _player_hp: int
-var _enemy_hp: int
+var _enemies_hp: Array[int] = []
 var _player_hero: HeroData
-var _enemy: EnemyData
+var _enemy_template: EnemyData
 var _battle_over: bool = false
 var _battle_id: String = ""
-var _turn_counter: int = 0
 
 var _atb_player: float = 0.0
-var _atb_enemy: float = 0.0
+var _atb_enemies: Array[float] = []
 
 var _skill_buttons: Array[Button] = []
+var _selected_enemy_idx: int = 0
 
 
 func _ready() -> void:
@@ -56,17 +68,14 @@ func _ready() -> void:
 	_rng = SeededRNG.new(int(Time.get_unix_time_from_system()))
 
 	_player_hero = ContentRegistry.get_hero(TEST_HERO_ID)
-	_enemy = ContentRegistry.get_enemy(TEST_ENEMY_ID)
+	_enemy_template = ContentRegistry.get_enemy(TEST_ENEMY_ID)
 	if _player_hero == null:
 		_fail_setup("missing hero: " + TEST_HERO_ID); return
-	if _enemy == null:
+	if _enemy_template == null:
 		_fail_setup("missing enemy: " + TEST_ENEMY_ID); return
 
 	_player_stats = _hero_to_stats(_player_hero)
-	_enemy_stats = _enemy_to_stats(_enemy)
 	_player_hp = int(_player_stats.hp)
-	_enemy_hp = int(_enemy_stats.hp)
-
 	_player_unit.bind(
 		_player_hero.display_name,
 		_player_hero.sprite_color,
@@ -75,16 +84,29 @@ func _ready() -> void:
 		_player_hero.sprite_scale,
 		_player_hero.sprite_y_offset,
 	)
-	_enemy_unit.bind(_enemy.display_name, _enemy.sprite_color, _enemy_hp)
+
+	# Spawn N enemies from the single template, slightly tinted apart.
+	for i in ENEMY_COUNT:
+		var stats := _enemy_to_stats(_enemy_template)
+		_enemies_stats.append(stats)
+		_enemies_hp.append(int(stats.hp))
+		_atb_enemies.append(0.0)
+		var unit: Node2D = _enemy_units[i]
+		var tint: Color = ENEMY_TINTS[i % ENEMY_TINTS.size()]
+		unit.bind("%s %d" % [_enemy_template.display_name, i + 1], tint, int(stats.hp))
+		unit.clicked.connect(_on_enemy_clicked.bind(i))
+		unit.set_targetable(true)
 
 	_setup_skill_buttons()
-	_turn_order_bar.register_unit(_player_hero.id, _player_hero.sprite_color, _player_hero.display_name)
-	_turn_order_bar.register_unit(_enemy.id, _enemy.sprite_color, _enemy.display_name)
+	_register_turn_order_units()
+	_select_enemy(0)
 	_refresh_turn_order_bar()
 
 	_end_panel.hide()
 	EventBus.combat_started.emit(_battle_id)
-	print("[Battle] starting — %s vs %s (seed=%d)" % [_player_hero.display_name, _enemy.display_name, _rng.rng.seed])
+	print("[Battle] starting — %s vs %d %s (seed=%d)" % [
+		_player_hero.display_name, ENEMY_COUNT, _enemy_template.display_name, _rng.rng.seed,
+	])
 	_next_turn()
 
 
@@ -105,6 +127,13 @@ func _setup_skill_buttons() -> void:
 			btn.visible = true
 		else:
 			btn.visible = false
+
+
+func _register_turn_order_units() -> void:
+	_turn_order_bar.register_unit(_player_hero.id, _player_hero.sprite_color, _player_hero.display_name)
+	for i in ENEMY_COUNT:
+		var id := _enemy_id(i)
+		_turn_order_bar.register_unit(id, ENEMY_TINTS[i % ENEMY_TINTS.size()], _enemy_template.display_name)
 
 
 func _hero_to_stats(h: HeroData) -> Dictionary:
@@ -136,25 +165,78 @@ func _effective_stats(base: Dictionary, sm: StatusManager) -> Dictionary:
 	return result
 
 
+# ─── Enemy ID helpers ────────────────────────────────────────────────
+
+func _enemy_id(idx: int) -> String:
+	return "%s_%d" % [_enemy_template.id, idx]
+
+
+func _idx_for_enemy_id(id: String) -> int:
+	for i in ENEMY_COUNT:
+		if _enemy_id(i) == id:
+			return i
+	return -1
+
+
+# ─── Targeting ───────────────────────────────────────────────────────
+
+func _on_enemy_clicked(idx: int) -> void:
+	if _battle_over: return
+	if idx < 0 or idx >= ENEMY_COUNT: return
+	if _enemies_hp[idx] <= 0: return
+	_select_enemy(idx)
+
+
+func _select_enemy(idx: int) -> void:
+	if _enemies_hp[idx] <= 0:
+		# pick another alive one
+		idx = _first_alive_enemy_idx()
+		if idx < 0: return
+	_selected_enemy_idx = idx
+	for i in ENEMY_COUNT:
+		_enemy_units[i].set_selected(i == idx and _enemies_hp[i] > 0)
+
+
+func _first_alive_enemy_idx() -> int:
+	for i in ENEMY_COUNT:
+		if _enemies_hp[i] > 0:
+			return i
+	return -1
+
+
+func _alive_enemy_count() -> int:
+	var count := 0
+	for hp in _enemies_hp:
+		if hp > 0: count += 1
+	return count
+
+
 # ─── ATB scheduler glue ──────────────────────────────────────────────
 
 func _atb_states() -> Array:
-	# Fresh effective SPDs each time — so SPD buffs/debuffs change scheduling
-	# the moment they're applied/expired.
+	var states: Array = []
 	var p_eff := _effective_stats(_player_stats, _player_unit.statuses)
-	var e_eff := _effective_stats(_enemy_stats, _enemy_unit.statuses)
-	return [
-		{"id": _player_hero.id, "atb": _atb_player, "spd": float(p_eff.spd), "alive": _player_hp > 0},
-		{"id": _enemy.id, "atb": _atb_enemy, "spd": float(e_eff.spd), "alive": _enemy_hp > 0},
-	]
+	states.append({
+		"id": _player_hero.id, "atb": _atb_player,
+		"spd": float(p_eff.spd), "alive": _player_hp > 0,
+	})
+	for i in ENEMY_COUNT:
+		var e_eff := _effective_stats(_enemies_stats[i], _enemy_units[i].statuses)
+		states.append({
+			"id": _enemy_id(i), "atb": _atb_enemies[i],
+			"spd": float(e_eff.spd), "alive": _enemies_hp[i] > 0,
+		})
+	return states
 
 
 func _commit_atb(new_states: Array) -> void:
 	for s in new_states:
 		if s.id == _player_hero.id:
 			_atb_player = float(s.atb)
-		elif s.id == _enemy.id:
-			_atb_enemy = float(s.atb)
+		else:
+			var idx: int = _idx_for_enemy_id(s.id)
+			if idx >= 0:
+				_atb_enemies[idx] = float(s.atb)
 
 
 func _refresh_turn_order_bar() -> void:
@@ -168,18 +250,17 @@ func _next_turn() -> void:
 	if _battle_over: return
 
 	var step: Dictionary = ATBScheduler.next_actor(_atb_states())
-	if step.is_empty():
-		return  # nothing alive — shouldn't happen, but safe
+	if step.is_empty(): return
 	_commit_atb(step.new_states)
 	_refresh_turn_order_bar()
 
-	_turn_counter += 1
 	var actor_id: String = step.actor_id
-
 	if actor_id == _player_hero.id:
 		await _do_player_turn()
 	else:
-		await _do_enemy_turn()
+		var idx: int = _idx_for_enemy_id(actor_id)
+		if idx >= 0:
+			await _do_enemy_turn(idx)
 
 	if _battle_over: return
 	_next_turn()
@@ -192,14 +273,16 @@ func _do_player_turn() -> void:
 		_turn_label.text = "Stunned"
 		_spawn_text_popup(_player_unit.global_position + Vector2(0, -260), "STUNNED", Color(0.95, 0.85, 0.3))
 		await get_tree().create_timer(0.7).timeout
-		ATBScheduler.deduct(_atb_states(), _player_hero.id, DEFAULT_ATB_COST)
 		_atb_player = max(0.0, _atb_player - DEFAULT_ATB_COST)
 	else:
+		# Make sure target is alive
+		if _enemies_hp[_selected_enemy_idx] <= 0:
+			_select_enemy(0)  # picks first alive
 		_turn_label.text = "Your move"
 		_set_actions_enabled(true)
 		await _player_action_done
 
-	await _tick_unit_statuses(_player_unit, _player_stats, true)
+	await _tick_unit_statuses_player()
 	_check_end_battle()
 
 
@@ -220,7 +303,6 @@ func _on_skill_pressed(idx: int) -> void:
 		_set_actions_enabled(true)
 		return
 	await _player_uses(skill_id)
-	# Deduct the skill's ATB cost (default 100 if not set)
 	var cost: float = float(skill.atb_cost) if skill.atb_cost > 0 else DEFAULT_ATB_COST
 	_atb_player = max(0.0, _atb_player - cost)
 	_refresh_turn_order_bar()
@@ -232,6 +314,7 @@ func _player_uses(skill_id: String) -> void:
 	if skill == null: return
 
 	var is_self: bool = skill.target_type == 4
+	var target_idx: int = _selected_enemy_idx
 	var target_stats: Dictionary
 	var target_id: String
 	var target_unit: Node2D
@@ -240,12 +323,16 @@ func _player_uses(skill_id: String) -> void:
 		target_id = _player_hero.id
 		target_unit = _player_unit
 	else:
-		target_stats = _enemy_stats
-		target_id = _enemy.id
-		target_unit = _enemy_unit
+		# Verify selection is alive — fallback to first alive if not.
+		if _enemies_hp[target_idx] <= 0:
+			target_idx = _first_alive_enemy_idx()
+			if target_idx < 0: return
+		target_stats = _enemies_stats[target_idx]
+		target_id = _enemy_id(target_idx)
+		target_unit = _enemy_units[target_idx]
 
 	if not is_self:
-		_lunge(_player_unit, _enemy_unit.global_position)
+		_lunge(_player_unit, target_unit.global_position)
 		await get_tree().create_timer(LUNGE_OUT).timeout
 	else:
 		var puff := create_tween()
@@ -256,7 +343,7 @@ func _player_uses(skill_id: String) -> void:
 	var attacker_eff := _effective_stats(_player_stats, _player_unit.statuses)
 	var target_eff := _effective_stats(target_stats, target_unit.statuses)
 
-	await _resolve_skill(skill, attacker_eff, target_eff, _player_hero.id, target_id, target_unit)
+	await _resolve_skill(skill, attacker_eff, target_eff, _player_hero.id, target_id, target_unit, target_idx)
 
 	if not is_self:
 		await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
@@ -266,40 +353,42 @@ func _player_uses(skill_id: String) -> void:
 
 # ─── Enemy turn ──────────────────────────────────────────────────────
 
-func _do_enemy_turn() -> void:
-	_turn_label.text = "%s moves" % _enemy.display_name
+func _do_enemy_turn(idx: int) -> void:
+	var enemy_unit := _enemy_units[idx]
+	var enemy_stats := _enemies_stats[idx]
+	_turn_label.text = "%s %d moves" % [_enemy_template.display_name, idx + 1]
 	await get_tree().create_timer(0.35).timeout
 
-	if _enemy_unit.statuses.is_stunned():
-		_spawn_text_popup(_enemy_unit.global_position + Vector2(0, -260), "STUNNED", Color(0.95, 0.85, 0.3))
+	if enemy_unit.statuses.is_stunned():
+		_spawn_text_popup(enemy_unit.global_position + Vector2(0, -260), "STUNNED", Color(0.95, 0.85, 0.3))
 		await get_tree().create_timer(0.7).timeout
 	else:
-		var enemy_skill := _make_enemy_skill()
-		_lunge(_enemy_unit, _player_unit.global_position)
+		var enemy_skill := _make_enemy_skill(idx)
+		_lunge(enemy_unit, _player_unit.global_position)
 		await get_tree().create_timer(LUNGE_OUT).timeout
 
-		var attacker_eff := _effective_stats(_enemy_stats, _enemy_unit.statuses)
+		var attacker_eff := _effective_stats(enemy_stats, enemy_unit.statuses)
 		var target_eff := _effective_stats(_player_stats, _player_unit.statuses)
 
-		await _resolve_skill(enemy_skill, attacker_eff, target_eff, _enemy.id, _player_hero.id, _player_unit)
+		await _resolve_skill(enemy_skill, attacker_eff, target_eff, _enemy_id(idx), _player_hero.id, _player_unit, -1)
 		await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
 
-	_atb_enemy = max(0.0, _atb_enemy - DEFAULT_ATB_COST)
+	_atb_enemies[idx] = max(0.0, _atb_enemies[idx] - DEFAULT_ATB_COST)
 	_refresh_turn_order_bar()
 
-	await _tick_unit_statuses(_enemy_unit, _enemy_stats, false)
+	await _tick_unit_statuses_enemy(idx)
 	_check_end_battle()
 
 
-func _make_enemy_skill() -> SkillData:
+func _make_enemy_skill(_idx: int) -> SkillData:
 	var skill := SkillData.new()
 	skill.id = "enemy_basic"
 	skill.skill_name = "Slam"
-	skill.element = int(_enemy_stats.element)
+	skill.element = int(_enemies_stats[_idx].element)
 	skill.target_type = 0
 	skill.atb_cost = 100
 	var dmg := EffectDamage.new()
-	dmg.power_mult = _enemy.attack_power
+	dmg.power_mult = _enemy_template.attack_power
 	dmg.hits = 1
 	skill.effects = [dmg]
 	return skill
@@ -307,22 +396,30 @@ func _make_enemy_skill() -> SkillData:
 
 # ─── Effect resolution ───────────────────────────────────────────────
 
-func _resolve_skill(skill: SkillData, attacker_stats: Dictionary, target_stats: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D) -> void:
+## target_idx: enemy index if the target IS an enemy, or -1 if the target is
+## the player (or self). Used by _apply_result for the HP update + cleanup.
+func _resolve_skill(skill: SkillData, attacker_stats: Dictionary, target_stats: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int) -> void:
 	for effect in skill.effects:
 		var ctx := EffectContext.new(attacker_stats, target_stats, attacker_id, target_id, skill, _rng)
 		var result: Dictionary = effect.apply(ctx)
-		_apply_result(result, attacker_id, target_id, target_unit)
+		_apply_result(result, attacker_id, target_id, target_unit, target_idx)
 		if result.get("kind") == "miss":
 			break
 
 
-func _apply_result(result: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D) -> void:
+func _apply_result(result: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int) -> void:
+	var target_is_enemy: bool = target_idx >= 0
+
 	match result.get("kind", "none"):
 		"damage":
 			var amount: int = int(result.damage)
-			if target_id == _enemy.id:
-				_enemy_hp = max(0, _enemy_hp - amount)
-				target_unit.set_hp(_enemy_hp, int(_enemy_stats.hp))
+			if target_is_enemy:
+				_enemies_hp[target_idx] = max(0, _enemies_hp[target_idx] - amount)
+				target_unit.set_hp(_enemies_hp[target_idx], int(_enemies_stats[target_idx].hp))
+				if _enemies_hp[target_idx] <= 0:
+					target_unit.set_dead(true)
+					if _selected_enemy_idx == target_idx:
+						_select_enemy(0)  # picks first alive
 			else:
 				_player_hp = max(0, _player_hp - amount)
 				target_unit.set_hp(_player_hp, int(_player_stats.hp))
@@ -351,12 +448,11 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 			print("[Battle] %s applied %s to %s (%d turns)" % [attacker_id, result.status_id, target_id, result.duration])
 		"status_resisted":
 			_spawn_text_popup(target_unit.global_position + Vector2(0, -260), "RESIST", Color(0.6, 0.8, 1.0))
-			print("[Battle] %s resisted %s" % [target_id, result.status_id])
 		"heal":
 			var amount: int = int(result.amount)
-			if target_id == _enemy.id:
-				_enemy_hp = min(int(_enemy_stats.hp), _enemy_hp + amount)
-				target_unit.set_hp(_enemy_hp, int(_enemy_stats.hp))
+			if target_is_enemy:
+				_enemies_hp[target_idx] = min(int(_enemies_stats[target_idx].hp), _enemies_hp[target_idx] + amount)
+				target_unit.set_hp(_enemies_hp[target_idx], int(_enemies_stats[target_idx].hp))
 			else:
 				_player_hp = min(int(_player_stats.hp), _player_hp + amount)
 				target_unit.set_hp(_player_hp, int(_player_stats.hp))
@@ -367,25 +463,42 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 
 # ─── Status ticks ────────────────────────────────────────────────────
 
-func _tick_unit_statuses(unit: Node2D, stats: Dictionary, is_player: bool) -> void:
+func _tick_unit_statuses_player() -> void:
+	var results: Array = _player_unit.statuses.tick_end_of_turn(_player_stats)
+	for result in results:
+		match result.get("kind"):
+			"tick_damage":
+				var amount: int = int(result.amount)
+				_player_hp = max(0, _player_hp - amount)
+				_player_unit.set_hp(_player_hp, int(_player_stats.hp))
+				_spawn_dot_popup(_player_unit.global_position + Vector2(0, -200), amount, result.status_id)
+				await get_tree().create_timer(0.20).timeout
+			"status_expired":
+				print("[Battle] %s expired on player" % result.status_id)
+	_player_unit.refresh_status_durations()
+	_refresh_turn_order_bar()
+
+
+func _tick_unit_statuses_enemy(idx: int) -> void:
+	var unit := _enemy_units[idx]
+	var stats := _enemies_stats[idx]
 	var results: Array = unit.statuses.tick_end_of_turn(stats)
 	for result in results:
 		match result.get("kind"):
 			"tick_damage":
 				var amount: int = int(result.amount)
-				if is_player:
-					_player_hp = max(0, _player_hp - amount)
-					unit.set_hp(_player_hp, int(_player_stats.hp))
-				else:
-					_enemy_hp = max(0, _enemy_hp - amount)
-					unit.set_hp(_enemy_hp, int(_enemy_stats.hp))
+				_enemies_hp[idx] = max(0, _enemies_hp[idx] - amount)
+				unit.set_hp(_enemies_hp[idx], int(stats.hp))
 				_spawn_dot_popup(unit.global_position + Vector2(0, -200), amount, result.status_id)
-				print("[Battle] %s tick %s -> %d" % [unit.name, result.status_id, amount])
+				if _enemies_hp[idx] <= 0:
+					unit.set_dead(true)
+					if _selected_enemy_idx == idx:
+						_select_enemy(0)
 				await get_tree().create_timer(0.20).timeout
 			"status_expired":
-				print("[Battle] %s expired on %s" % [result.status_id, unit.name])
+				print("[Battle] %s expired on enemy %d" % [result.status_id, idx])
 	unit.refresh_status_durations()
-	_refresh_turn_order_bar()  # in case the status change affected SPD
+	_refresh_turn_order_bar()
 
 
 func _spawn_dot_popup(at: Vector2, amount: int, status_id: String) -> void:
@@ -400,7 +513,7 @@ func _spawn_dot_popup(at: Vector2, amount: int, status_id: String) -> void:
 # ─── End-of-battle ───────────────────────────────────────────────────
 
 func _check_end_battle() -> bool:
-	if _enemy_hp <= 0:
+	if _alive_enemy_count() == 0:
 		_end_battle(true); return true
 	if _player_hp <= 0:
 		_end_battle(false); return true
@@ -411,6 +524,9 @@ func _end_battle(victory: bool) -> void:
 	if _battle_over: return
 	_battle_over = true
 	_set_actions_enabled(false)
+	for u in _enemy_units:
+		u.set_targetable(false)
+		u.set_selected(false)
 	_result_label.text = "VICTORY" if victory else "DEFEAT"
 	_result_label.add_theme_color_override(
 		"font_color",

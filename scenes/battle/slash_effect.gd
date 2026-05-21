@@ -1,24 +1,41 @@
 extends Node2D
-## A single slash arc VFX. Spawned when a melee hit lands.
+## Slash arc VFX — appears at the impact point of a melee hit.
 ##
-## Phase 1.5c stand-in for real attack-frame animations. Plays one slash
-## arc texture, scales up + fades out + rotates slightly, then frees itself.
-## When Phase 2 ships frame-by-frame attack animations, this stays as
-## layered VFX on top — the slash arc IS the impact, not the swing.
+## The slash texture is the peak frame from Mana Seed's slash 1 animation.
+## We don't run the full 4-frame anim here — we spawn at IMPACT only, so we
+## use the peak arc and pop it in + fade it out. No rotation (that just made
+## the arc look like it was spinning, which it wasn't supposed to).
+##
+## Direction:
+##   Default (flipped=false): arc opens left, bulges right.
+##     Use for: player on left attacking enemy on right.
+##   Flipped (flipped=true): arc mirrored — opens right, bulges left.
+##     Use for: enemy on right attacking player on left.
 
 @onready var _sprite: Sprite2D = $Sprite
 
-const DURATION := 0.32
+const POP_IN := 0.05
+const HOLD := 0.10
+const FADE_OUT := 0.18
 
 
 func _ready() -> void:
-	var tween := create_tween().set_parallel(true)
-	tween.tween_property(_sprite, "scale", _sprite.scale * 1.4, DURATION * 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_sprite, "rotation", _sprite.rotation + deg_to_rad(25), DURATION * 0.8)
-	tween.tween_property(_sprite, "modulate:a", 0.0, DURATION).set_delay(DURATION * 0.4)
+	var target_scale: Vector2 = _sprite.scale
+	_sprite.scale = target_scale * 0.65
+	_sprite.modulate.a = 0.0
+
+	var tween := create_tween()
+	# Pop in: snap to full scale + opaque
+	tween.set_parallel(true)
+	tween.tween_property(_sprite, "scale", target_scale, POP_IN).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(_sprite, "modulate:a", 1.0, POP_IN)
+	# Hold
+	tween.chain().tween_interval(HOLD)
+	# Fade out
+	tween.chain().tween_property(_sprite, "modulate:a", 0.0, FADE_OUT)
 	tween.chain().tween_callback(queue_free)
 
 
-## Flip the slash horizontally for left-facing impacts (e.g. enemy hits player).
+## Mirror horizontally so the arc opens toward the attacker's side.
 func set_flipped(flipped: bool) -> void:
 	_sprite.flip_h = flipped

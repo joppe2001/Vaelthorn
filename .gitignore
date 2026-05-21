@@ -1,0 +1,45 @@
+# Godot 4+ specific ignores
+.godot/
+.import/
+
+# Imported translations (generated from CSV)
+*.translation
+
+# Mono / .NET (we don't use it, but for safety)
+.mono/
+data_*/
+mono_crash.*.json
+
+# macOS / Windows / Linux system files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor / IDE state
+.vscode/
+.idea/
+*.user
+
+# Build outputs
+exports/
+build/
+*.exe
+*.dmg
+*.app/
+*.apk
+*.aab
+*.zip
+
+# Local environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Logs / crash dumps
+*.log
+crash_dumps/
+
+# User-specific Godot files
+*.user.tres

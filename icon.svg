@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" fill="#1d1d2c"/>
+  <rect x="8" y="8" width="112" height="112" fill="none" stroke="#f9c74f" stroke-width="2"/>
+  <text x="64" y="80" font-family="monospace" font-size="56" font-weight="bold"
+        fill="#f9c74f" text-anchor="middle">V</text>
+</svg>

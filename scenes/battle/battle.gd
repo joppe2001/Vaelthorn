@@ -12,9 +12,9 @@ const POPUP_SCENE := preload("res://scenes/battle/damage_popup.tscn")
 
 @onready var _player_unit: Node2D = $PlayerUnit
 @onready var _enemy_unit: Node2D = $EnemyUnit
-@onready var _turn_label: Label = $UI/TurnLabel
-@onready var _basic_btn: Button = $UI/Actions/BasicAttack
-@onready var _flame_btn: Button = $UI/Actions/FlameSlash
+@onready var _turn_label: Label = $UI/TurnPanel/TurnLabel
+@onready var _basic_btn: Button = $UI/ActionPanel/Actions/BasicAttack
+@onready var _flame_btn: Button = $UI/ActionPanel/Actions/FlameSlash
 @onready var _end_panel: ColorRect = $UI/EndPanel
 @onready var _result_label: Label = $UI/EndPanel/EndVBox/ResultLabel
 @onready var _popup_layer: Node2D = $PopupLayer

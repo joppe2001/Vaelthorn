@@ -94,7 +94,11 @@ func _ready() -> void:
 		var unit: Node2D = _enemy_units[i]
 		var tint: Color = ENEMY_TINTS[i % ENEMY_TINTS.size()]
 		unit.bind("%s %d" % [_enemy_template.display_name, i + 1], tint, int(stats.hp))
-		unit.clicked.connect(_on_enemy_clicked.bind(i))
+		# Signal emits (unit), our handler takes (idx). Wrap in a closure that
+		# captures the index — `.bind(i)` would APPEND i, giving (unit, idx)
+		# which silently mismatches our handler signature.
+		var captured_idx := i
+		unit.clicked.connect(func(_clicked_unit: Node2D): _on_enemy_clicked(captured_idx))
 		unit.set_targetable(true)
 
 	_setup_skill_buttons()

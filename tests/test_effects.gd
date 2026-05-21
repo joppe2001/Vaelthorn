@@ -24,6 +24,16 @@ func _ready() -> void:
 	_test_status_manager_refresh_duration()
 	_test_content_burn_loaded()
 	_test_flame_slash_has_two_effects()
+	# Phase 2b additions
+	_test_status_manager_atk_up_multiplier()
+	_test_status_manager_def_down_multiplier()
+	_test_status_manager_stacked_buff_debuff()
+	_test_status_manager_unrelated_stat_unchanged()
+	_test_status_manager_stun_flag()
+	_test_content_atk_up_def_down_stun_loaded()
+	_test_brace_skill_structure()
+	_test_shatter_skill_structure()
+	_test_ember_knight_has_4_skills()
 
 	print("")
 	print("=== %d passed, %d failed ===" % [_passed, _failed])
@@ -240,3 +250,119 @@ func _test_flame_slash_has_two_effects() -> void:
 		_assert(sk.effects[1] is EffectStatus, "second effect is EffectStatus")
 		if sk.effects[1] is EffectStatus:
 			_assert(sk.effects[1].status_id == "burn", "second effect applies burn")
+
+
+# ─── Phase 2b: stat modifiers ────────────────────────────────────────
+
+func _test_status_manager_atk_up_multiplier() -> void:
+	print("\n[StatusManager ATK_UP multiplier]")
+	var sm := StatusManager.new()
+	var atk_up: StatusEffectData = ContentRegistry.get_status("atk_up")
+	if atk_up == null:
+		_assert(false, "atk_up.tres must exist"); return
+	_assert(sm.get_stat_multiplier("atk") == 1.0, "no statuses -> 1.0")
+	sm.add("atk_up", 2, 0.0, atk_up)
+	_assert(abs(sm.get_stat_multiplier("atk") - 1.3) < 0.001, "ATK_UP -> 1.3 (got %.3f)" % sm.get_stat_multiplier("atk"))
+
+
+func _test_status_manager_def_down_multiplier() -> void:
+	print("\n[StatusManager DEF_DOWN multiplier]")
+	var sm := StatusManager.new()
+	var def_down: StatusEffectData = ContentRegistry.get_status("def_down")
+	if def_down == null:
+		_assert(false, "def_down.tres must exist"); return
+	sm.add("def_down", 2, 0.0, def_down)
+	_assert(abs(sm.get_stat_multiplier("def") - 0.7) < 0.001, "DEF_DOWN -> 0.7 (got %.3f)" % sm.get_stat_multiplier("def"))
+
+
+func _test_status_manager_stacked_buff_debuff() -> void:
+	print("\n[StatusManager stacked buff + debuff on same stat]")
+	# Synthesize an ATK_DEBUFF data on the fly: -20% ATK
+	var atk_debuff := StatusEffectData.new()
+	atk_debuff.id = "atk_debuff_test"
+	atk_debuff.modifier_kind = StatusEffectData.ModifierKind.ATK_PCT
+	atk_debuff.modifier_amount = -20.0
+	var atk_up: StatusEffectData = ContentRegistry.get_status("atk_up")
+	if atk_up == null: return
+	var sm := StatusManager.new()
+	sm.add("atk_up", 2, 0.0, atk_up)                # +30%
+	sm.add("atk_debuff_test", 2, 0.0, atk_debuff)   # -20%
+	# 1.0 + 0.30 - 0.20 = 1.10
+	_assert(abs(sm.get_stat_multiplier("atk") - 1.10) < 0.001, "stacked +30 -20 -> 1.10 (got %.3f)" % sm.get_stat_multiplier("atk"))
+
+
+func _test_status_manager_unrelated_stat_unchanged() -> void:
+	print("\n[StatusManager unrelated stat unaffected]")
+	var sm := StatusManager.new()
+	var atk_up: StatusEffectData = ContentRegistry.get_status("atk_up")
+	if atk_up == null: return
+	sm.add("atk_up", 2, 0.0, atk_up)
+	_assert(sm.get_stat_multiplier("def") == 1.0, "DEF unaffected by ATK_UP")
+	_assert(sm.get_stat_multiplier("spd") == 1.0, "SPD unaffected by ATK_UP")
+
+
+func _test_status_manager_stun_flag() -> void:
+	print("\n[StatusManager is_stunned]")
+	var sm := StatusManager.new()
+	var stun: StatusEffectData = ContentRegistry.get_status("stun")
+	if stun == null:
+		_assert(false, "stun.tres must exist"); return
+	_assert(not sm.is_stunned(), "no statuses -> not stunned")
+	sm.add("stun", 1, 0.0, stun)
+	_assert(sm.is_stunned(), "stun status -> stunned")
+
+
+# ─── Phase 2b: new content ───────────────────────────────────────────
+
+func _test_content_atk_up_def_down_stun_loaded() -> void:
+	print("\n[Content registry: atk_up / def_down / stun]")
+	var atk_up: StatusEffectData = ContentRegistry.get_status("atk_up")
+	var def_down: StatusEffectData = ContentRegistry.get_status("def_down")
+	var stun: StatusEffectData = ContentRegistry.get_status("stun")
+	_assert(atk_up != null, "atk_up.tres loads")
+	_assert(def_down != null, "def_down.tres loads")
+	_assert(stun != null, "stun.tres loads")
+	if atk_up != null:
+		_assert(atk_up.modifier_kind == StatusEffectData.ModifierKind.ATK_PCT, "atk_up modifier_kind = ATK_PCT")
+		_assert(atk_up.modifier_amount == 30.0, "atk_up modifier_amount = 30.0")
+	if def_down != null:
+		_assert(def_down.modifier_amount == -30.0, "def_down modifier_amount = -30.0")
+	if stun != null:
+		_assert(stun.skip_turn == true, "stun skip_turn = true")
+
+
+func _test_brace_skill_structure() -> void:
+	print("\n[brace skill composition]")
+	var sk: SkillData = ContentRegistry.get_skill("brace")
+	_assert(sk != null, "brace.tres loads")
+	if sk != null:
+		_assert(sk.target_type == 4, "brace target_type = SELF (4)")
+		_assert(sk.effects.size() == 1, "brace has 1 effect")
+		_assert(sk.effects[0] is EffectStatus, "brace effect is EffectStatus")
+		if sk.effects[0] is EffectStatus:
+			_assert(sk.effects[0].status_id == "atk_up", "brace applies atk_up")
+
+
+func _test_shatter_skill_structure() -> void:
+	print("\n[shatter skill composition]")
+	var sk: SkillData = ContentRegistry.get_skill("shatter")
+	_assert(sk != null, "shatter.tres loads")
+	if sk != null:
+		_assert(sk.target_type == 0, "shatter target_type = ENEMY_SINGLE")
+		_assert(sk.effects.size() == 2, "shatter has 2 effects")
+		_assert(sk.effects[0] is EffectDamage, "shatter first effect is EffectDamage")
+		_assert(sk.effects[1] is EffectStatus, "shatter second effect is EffectStatus")
+		if sk.effects[1] is EffectStatus:
+			_assert(sk.effects[1].status_id == "def_down", "shatter applies def_down")
+
+
+func _test_ember_knight_has_4_skills() -> void:
+	print("\n[ember_knight roster]")
+	var hero: HeroData = ContentRegistry.get_hero("ember_knight")
+	_assert(hero != null, "ember_knight loads")
+	if hero != null:
+		_assert(hero.skill_ids.size() == 4, "ember_knight has 4 skill_ids (got %d)" % hero.skill_ids.size())
+		var expected := ["basic_attack", "flame_slash", "brace", "shatter"]
+		for i in 4:
+			if i < hero.skill_ids.size():
+				_assert(hero.skill_ids[i] == expected[i], "skill_ids[%d] == %s (got %s)" % [i, expected[i], hero.skill_ids[i]])

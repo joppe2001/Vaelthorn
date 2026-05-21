@@ -1,25 +1,28 @@
 extends Node2D
-## Phase 2a — Effect Composition battle controller.
+## Phase 2b — Combat depth: stat modifiers, SELF-targeting, turn flow fix.
 ##
-## Skills no longer pass scalar power/element to a damage call; they iterate
-## their `effects: Array[Effect]`, call apply(ctx) on each, and the battle
-## scene processes the resulting dictionaries.
+## Skills are now dynamically bound from hero.skill_ids (up to 4 slots).
+## Brace (SELF) demonstrates non-damage buff skills. Shatter chains a damage
+## effect with a debuff status.
 ##
-## End-of-turn ticks (DoT, buff decay) live on each unit's StatusManager.
-## Phase 2b adds: 5v5, ATB turn order, more statuses, ultimate gauge.
+## Effective stats:
+##   Before resolving any skill, each side's stats are passed through their
+##   StatusManager.get_stat_multiplier() so ATK_UP / DEF_DOWN actually
+##   change the damage that Damage.compute() produces.
+##   Damage.compute itself stays pure — modifications happen at the boundary.
 
 const POPUP_SCENE := preload("res://scenes/battle/damage_popup.tscn")
 const SLASH_SCENE := preload("res://scenes/battle/slash_effect.tscn")
+const MAX_SKILL_SLOTS := 4
 
 @onready var _player_unit: Node2D = $PlayerUnit
 @onready var _enemy_unit: Node2D = $EnemyUnit
 @onready var _turn_label: Label = $UI/TurnPanel/TurnLabel
-@onready var _basic_btn: Button = $UI/ActionPanel/Actions/BasicAttack
-@onready var _flame_btn: Button = $UI/ActionPanel/Actions/FlameSlash
 @onready var _end_panel: ColorRect = $UI/EndPanel
 @onready var _result_label: Label = $UI/EndPanel/EndVBox/ResultLabel
 @onready var _popup_layer: Node2D = $PopupLayer
 @onready var _camera: Camera2D = $Camera
+@onready var _actions_hbox: HBoxContainer = $UI/ActionPanel/Actions
 
 const TEST_HERO_ID := "ember_knight"
 const TEST_ENEMY_ID := "training_slime"
@@ -38,6 +41,9 @@ var _enemy: EnemyData
 var _battle_over: bool = false
 var _round: int = 0
 var _battle_id: String = ""
+var _enemy_acted_this_round: bool = false
+
+var _skill_buttons: Array[Button] = []
 
 
 func _ready() -> void:
@@ -67,22 +73,32 @@ func _ready() -> void:
 	)
 	_enemy_unit.bind(_enemy.display_name, _enemy.sprite_color, _enemy_hp)
 
-	_basic_btn.text = _label_for_skill(_player_hero.skill_ids[0] if _player_hero.skill_ids.size() > 0 else "")
-	if _player_hero.skill_ids.size() > 1:
-		_flame_btn.text = _label_for_skill(_player_hero.skill_ids[1])
-		_flame_btn.visible = true
-	else:
-		_flame_btn.visible = false
-
+	_setup_skill_buttons()
 	_end_panel.hide()
 	EventBus.combat_started.emit(_battle_id)
 	print("[Battle] starting — %s vs %s (seed=%d)" % [_player_hero.display_name, _enemy.display_name, _rng.rng.seed])
 	_begin_round()
 
 
-func _label_for_skill(skill_id: String) -> String:
-	var s := ContentRegistry.get_skill(skill_id)
-	return s.skill_name if s != null else "Attack"
+func _setup_skill_buttons() -> void:
+	# Collect the 4 SkillBtn nodes; bind to hero.skill_ids by index.
+	_skill_buttons.clear()
+	for i in MAX_SKILL_SLOTS:
+		var btn: Button = _actions_hbox.get_node("SkillBtn%d" % i)
+		_skill_buttons.append(btn)
+		var idx := i
+		btn.pressed.connect(func(): _on_skill_pressed(idx))
+
+	# Set label from hero's skill_ids; hide unused slots.
+	for i in MAX_SKILL_SLOTS:
+		var btn: Button = _skill_buttons[i]
+		if i < _player_hero.skill_ids.size():
+			var s: SkillData = ContentRegistry.get_skill(_player_hero.skill_ids[i])
+			btn.text = s.skill_name if s != null else "?"
+			btn.tooltip_text = s.description if s != null else ""
+			btn.visible = true
+		else:
+			btn.visible = false
 
 
 func _hero_to_stats(h: HeroData) -> Dictionary:
@@ -103,71 +119,140 @@ func _enemy_to_stats(e: EnemyData) -> Dictionary:
 	}
 
 
+## Apply status modifiers to a base stats dictionary. Pure function: returns
+## a NEW dict, doesn't mutate base. Damage.compute() reads this as if it
+## were raw stats; it doesn't know about statuses.
+func _effective_stats(base: Dictionary, sm: StatusManager) -> Dictionary:
+	var result := base.duplicate(true)
+	result["atk"] = int(float(base["atk"]) * sm.get_stat_multiplier("atk"))
+	result["def"] = int(float(base["def"]) * sm.get_stat_multiplier("def"))
+	result["spd"] = int(float(base["spd"]) * sm.get_stat_multiplier("spd"))
+	# acc/eva/crit_rate stay multiplicative on floats — keep as floats
+	result["acc"] = float(base["acc"]) * sm.get_stat_multiplier("acc")
+	result["eva"] = float(base["eva"]) * sm.get_stat_multiplier("eva")
+	result["crit_rate"] = float(base["crit_rate"]) * sm.get_stat_multiplier("crit_rate")
+	return result
+
+
+# ─── Round flow ──────────────────────────────────────────────────────
+
 func _begin_round() -> void:
 	if _battle_over: return
 	_round += 1
-	_turn_label.text = "Round %d — your move" % _round
-	_set_actions_enabled(_player_stats.spd >= _enemy_stats.spd)
-	if _player_stats.spd < _enemy_stats.spd:
-		_turn_label.text = "Round %d — enemy moves" % _round
-		await _enemy_turn()
+	_enemy_acted_this_round = false
+
+	var player_first: bool = int(_player_stats.spd) >= int(_enemy_stats.spd)
+	if player_first:
+		_start_player_turn()
+	else:
+		await _do_enemy_turn()
+		if _battle_over: return
+		_enemy_acted_this_round = true
+		_start_player_turn()
+
+
+func _start_player_turn() -> void:
+	if _player_unit.statuses.is_stunned():
+		_turn_label.text = "Round %d — stunned" % _round
+		_spawn_text_popup(_player_unit.global_position + Vector2(0, -260), "STUNNED", Color(0.95, 0.85, 0.3))
+		await get_tree().create_timer(0.7).timeout
+		await _tick_unit_statuses(_player_unit, _player_stats, true)
+		if _check_end_battle(): return
+		_continue_after_player()
+	else:
+		_turn_label.text = "Round %d — your move" % _round
+		_set_actions_enabled(true)
+		# Buttons drive _on_skill_pressed -> _player_uses
 
 
 func _set_actions_enabled(enabled: bool) -> void:
-	_basic_btn.disabled = not enabled
-	_flame_btn.disabled = not enabled
+	for btn in _skill_buttons:
+		if btn.visible:
+			btn.disabled = not enabled
 
 
-func _on_basic_attack_pressed() -> void:
+func _on_skill_pressed(idx: int) -> void:
 	if _battle_over: return
-	if _player_hero.skill_ids.size() == 0: return
-	await _player_uses(_player_hero.skill_ids[0])
+	if idx >= _player_hero.skill_ids.size(): return
+	_set_actions_enabled(false)
+	await _player_uses(_player_hero.skill_ids[idx])
+	await _tick_unit_statuses(_player_unit, _player_stats, true)
+	if _check_end_battle(): return
+	_continue_after_player()
 
 
-func _on_flame_slash_pressed() -> void:
-	if _battle_over: return
-	if _player_hero.skill_ids.size() < 2: return
-	await _player_uses(_player_hero.skill_ids[1])
+func _continue_after_player() -> void:
+	if _enemy_acted_this_round:
+		_begin_round()
+	else:
+		await _do_enemy_turn()
+		_enemy_acted_this_round = true
+		if _battle_over: return
+		_begin_round()
 
 
-# ─── Turns ───────────────────────────────────────────────────────────
+# ─── Player action ───────────────────────────────────────────────────
 
 func _player_uses(skill_id: String) -> void:
 	var skill: SkillData = ContentRegistry.get_skill(skill_id)
 	if skill == null:
 		push_error("[Battle] missing skill: " + skill_id); return
-	_set_actions_enabled(false)
 
-	# If stunned, skip the turn (architecture-ready for Phase 2b stun.tres).
-	if _player_unit.statuses.is_stunned():
-		_spawn_text_popup(_player_unit.global_position + Vector2(0, -240), "STUNNED", Color(0.9, 0.9, 0.3))
-		await get_tree().create_timer(0.6).timeout
+	# Pick target based on skill's target_type
+	var is_self: bool = skill.target_type == 4   # SELF
+	var target_stats: Dictionary
+	var target_id: String
+	var target_unit: Node2D
+	if is_self:
+		target_stats = _player_stats
+		target_id = _player_hero.id
+		target_unit = _player_unit
 	else:
+		target_stats = _enemy_stats
+		target_id = _enemy.id
+		target_unit = _enemy_unit
+
+	# Lunge only for offensive skills
+	if not is_self:
 		_lunge(_player_unit, _enemy_unit.global_position)
 		await get_tree().create_timer(LUNGE_OUT).timeout
-		await _resolve_skill(skill, _player_stats, _enemy_stats, _player_hero.id, _enemy.id, _enemy_unit)
+	else:
+		# Brief brace-effect: scale up briefly
+		var puff := create_tween()
+		puff.tween_property(_player_unit, "scale", Vector2(1.06, 1.06), 0.10)
+		puff.tween_property(_player_unit, "scale", Vector2(1.0, 1.0), 0.18)
+		await get_tree().create_timer(0.15).timeout
+
+	# Effective stats with all current status modifiers
+	var attacker_eff := _effective_stats(_player_stats, _player_unit.statuses)
+	var target_eff := _effective_stats(target_stats, target_unit.statuses)
+
+	await _resolve_skill(skill, attacker_eff, target_eff, _player_hero.id, target_id, target_unit)
+
+	if not is_self:
 		await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
-
-	await _tick_unit_statuses(_player_unit, _player_stats, true)
-	if _check_end_battle(): return
-
-	await _enemy_turn()
-	if _battle_over: return
-	_begin_round()
+	else:
+		await get_tree().create_timer(0.45).timeout
 
 
-func _enemy_turn() -> void:
+# ─── Enemy action ────────────────────────────────────────────────────
+
+func _do_enemy_turn() -> void:
 	_turn_label.text = "Round %d — enemy moves" % _round
 	await get_tree().create_timer(0.35).timeout
 
 	if _enemy_unit.statuses.is_stunned():
-		_spawn_text_popup(_enemy_unit.global_position + Vector2(0, -240), "STUNNED", Color(0.9, 0.9, 0.3))
-		await get_tree().create_timer(0.6).timeout
+		_spawn_text_popup(_enemy_unit.global_position + Vector2(0, -260), "STUNNED", Color(0.95, 0.85, 0.3))
+		await get_tree().create_timer(0.7).timeout
 	else:
 		var enemy_skill := _make_enemy_skill()
 		_lunge(_enemy_unit, _player_unit.global_position)
 		await get_tree().create_timer(LUNGE_OUT).timeout
-		await _resolve_skill(enemy_skill, _enemy_stats, _player_stats, _enemy.id, _player_hero.id, _player_unit)
+
+		var attacker_eff := _effective_stats(_enemy_stats, _enemy_unit.statuses)
+		var target_eff := _effective_stats(_player_stats, _player_unit.statuses)
+
+		await _resolve_skill(enemy_skill, attacker_eff, target_eff, _enemy.id, _player_hero.id, _player_unit)
 		await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
 
 	await _tick_unit_statuses(_enemy_unit, _enemy_stats, false)
@@ -175,8 +260,8 @@ func _enemy_turn() -> void:
 
 
 func _make_enemy_skill() -> SkillData:
-	# Phase 2a: enemies don't yet have authored .tres skills. Construct a
-	# synthetic basic-attack skill so the effect pipeline is uniform.
+	# Phase 2b: enemy still uses synthetic skill. Phase 2c will give
+	# enemies authored .tres skill_ids.
 	var skill := SkillData.new()
 	skill.id = "enemy_basic"
 	skill.skill_name = "Slam"
@@ -228,8 +313,7 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 		"status":
 			var data: StatusEffectData = ContentRegistry.get_status(result.status_id)
 			if data == null:
-				push_error("[Battle] missing status: " + str(result.status_id))
-				return
+				push_error("[Battle] missing status: " + str(result.status_id)); return
 			target_unit.add_status(result.status_id, result.duration, result.power, data)
 			_spawn_text_popup(target_unit.global_position + Vector2(0, -260), data.display_name.to_upper(), data.icon_color)
 			EventBus.status_applied.emit(target_id, result.status_id)
@@ -239,8 +323,6 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 			print("[Battle] %s resisted %s" % [target_id, result.status_id])
 		"heal":
 			var amount: int = int(result.amount)
-			# Phase 2a: heals not used yet. When they are, target_id matches caster.
-			# Apply to whoever target_unit is.
 			if target_id == _enemy.id:
 				_enemy_hp = min(int(_enemy_stats.hp), _enemy_hp + amount)
 				target_unit.set_hp(_enemy_hp, int(_enemy_stats.hp))

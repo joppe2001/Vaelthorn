@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SkillData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/skill_data.gd" id="1_skill"]
+[ext_resource type="Script" path="res://scripts/combat/effects/effect_status.gd" id="2_status"]
+
+[sub_resource type="Resource" id="EffectStatus_brace_atk_up"]
+script = ExtResource("2_status")
+trigger = 0
+status_id = "atk_up"
+duration = 2
+chance = 1.0
+power = 0.0
+
+[resource]
+script = ExtResource("1_skill")
+id = "brace"
+skill_name = "Brace"
+description = "Channels resolve. Gain +30% ATK for 2 turns."
+target_type = 4
+element = -1
+cooldown = 0
+atb_cost = 100
+effects = Array[Effect]([SubResource("EffectStatus_brace_atk_up")])

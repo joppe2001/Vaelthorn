@@ -26,9 +26,9 @@ corner_radius_top_left = 3
 corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
-content_margin_left = 16.0
+content_margin_left = 12.0
 content_margin_top = 8.0
-content_margin_right = 16.0
+content_margin_right = 12.0
 content_margin_bottom = 8.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_BtnHover"]
@@ -42,9 +42,9 @@ corner_radius_top_left = 3
 corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
-content_margin_left = 16.0
+content_margin_left = 12.0
 content_margin_top = 8.0
-content_margin_right = 16.0
+content_margin_right = 12.0
 content_margin_bottom = 8.0
 
 [node name="Battle" type="Node2D"]
@@ -100,40 +100,60 @@ theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.976, 0.78, 0.31, 1)
 
 [node name="ActionPanel" type="PanelContainer" parent="UI"]
-offset_left = 340.0
+offset_left = 180.0
 offset_top = 612.0
-offset_right = 940.0
+offset_right = 1100.0
 offset_bottom = 692.0
 theme_override_styles/panel = SubResource("StyleBox_TurnPanel")
 
 [node name="Actions" type="HBoxContainer" parent="UI/ActionPanel"]
 alignment = 1
-theme_override_constants/separation = 24
+theme_override_constants/separation = 22
 
-[node name="BasicAttack" type="Button" parent="UI/ActionPanel/Actions"]
-custom_minimum_size = Vector2(220, 60)
+[node name="SkillBtn0" type="Button" parent="UI/ActionPanel/Actions"]
+custom_minimum_size = Vector2(200, 60)
 text = "Strike"
 theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
 theme_override_styles/hover = SubResource("StyleBox_BtnHover")
 theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
 
-[node name="FlameSlash" type="Button" parent="UI/ActionPanel/Actions"]
-custom_minimum_size = Vector2(220, 60)
+[node name="SkillBtn1" type="Button" parent="UI/ActionPanel/Actions"]
+custom_minimum_size = Vector2(200, 60)
 text = "Flame Slash"
 theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
 theme_override_styles/hover = SubResource("StyleBox_BtnHover")
 theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
+theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
+
+[node name="SkillBtn2" type="Button" parent="UI/ActionPanel/Actions"]
+custom_minimum_size = Vector2(200, 60)
+text = "Brace"
+theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
+theme_override_styles/hover = SubResource("StyleBox_BtnHover")
+theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
+theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
+
+[node name="SkillBtn3" type="Button" parent="UI/ActionPanel/Actions"]
+custom_minimum_size = Vector2(200, 60)
+text = "Shatter"
+theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
+theme_override_styles/hover = SubResource("StyleBox_BtnHover")
+theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
+theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
 
 [node name="EndPanel" type="ColorRect" parent="UI"]
 offset_right = 1280.0
 offset_bottom = 720.0
-color = Color(0, 0, 0, 0.7)
+color = Color(0, 0, 0, 0.65)
 visible = false
 
 [node name="EndVBox" type="VBoxContainer" parent="UI/EndPanel"]
@@ -147,11 +167,10 @@ theme_override_constants/separation = 32
 [node name="ResultLabel" type="Label" parent="UI/EndPanel/EndVBox"]
 text = "VICTORY"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 72
-theme_override_colors/font_color = Color(0.976, 0.78, 0.31, 1)
+theme_override_font_sizes/font_size = 64
 
 [node name="ReturnBtn" type="Button" parent="UI/EndPanel/EndVBox"]
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 56)
 text = "Return to Hub"
 theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
 theme_override_styles/hover = SubResource("StyleBox_BtnHover")
@@ -160,6 +179,4 @@ theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
 
-[connection signal="pressed" from="UI/ActionPanel/Actions/BasicAttack" to="." method="_on_basic_attack_pressed"]
-[connection signal="pressed" from="UI/ActionPanel/Actions/FlameSlash" to="." method="_on_flame_slash_pressed"]
 [connection signal="pressed" from="UI/EndPanel/EndVBox/ReturnBtn" to="." method="_on_return_pressed"]

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="StatusEffectData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/status_effect_data.gd" id="1_status"]
+
+[resource]
+script = ExtResource("1_status")
+id = "stun"
+display_name = "Stun"
+description = "Cannot act. Skip the next turn."
+tick_kind = 0
+tick_amount = 0.0
+modifier_kind = 0
+modifier_amount = 0.0
+skip_turn = true
+icon_letter = "Z"
+icon_color = Color(0.95, 0.85, 0.3, 1)
+element_tag = 0

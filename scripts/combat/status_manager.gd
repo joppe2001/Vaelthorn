@@ -36,6 +36,33 @@ func is_stunned() -> bool:
 	return false
 
 
+## Aggregate stat multiplier from all active status modifiers.
+## Result is clamped to [0.0, inf). Returns 1.0 if no relevant modifiers.
+##
+## stat_key: "atk" | "def" | "spd" | "acc" | "eva" | "crit_rate"
+func get_stat_multiplier(stat_key: String) -> float:
+	var mult: float = 1.0
+	for s in active.values():
+		var data: StatusEffectData = s.data
+		var matches: bool = false
+		match data.modifier_kind:
+			StatusEffectData.ModifierKind.ATK_PCT:
+				matches = stat_key == "atk"
+			StatusEffectData.ModifierKind.DEF_PCT:
+				matches = stat_key == "def"
+			StatusEffectData.ModifierKind.SPD_PCT:
+				matches = stat_key == "spd"
+			StatusEffectData.ModifierKind.ACC_PCT:
+				matches = stat_key == "acc"
+			StatusEffectData.ModifierKind.EVA_PCT:
+				matches = stat_key == "eva"
+			StatusEffectData.ModifierKind.CRIT_RATE_PCT:
+				matches = stat_key == "crit_rate"
+		if matches:
+			mult += data.modifier_amount / 100.0
+	return max(0.0, mult)
+
+
 func all_ids() -> Array:
 	return active.keys()
 

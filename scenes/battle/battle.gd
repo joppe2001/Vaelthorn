@@ -2,13 +2,17 @@ extends Node2D
 ## Phase 1 — Battle MVP scene controller.
 ##
 ## 1v1, simple round-based turn order (sort by SPD), direct damage resolution.
+## Phase 1.5c adds: lunge animation on attacks, slash VFX at impact, camera
+## shake on crits.
 ## Phase 2 upgrades:
 ##   - 5v5 party combat
 ##   - ATB turn order (replaces this round-based logic)
 ##   - Effect composition replaces direct Damage.compute() calls
+##   - Real per-frame attack/hurt sprite animations (replaces the lunge)
 ##   - Status effects, cooldowns, ultimate gauge
 
 const POPUP_SCENE := preload("res://scenes/battle/damage_popup.tscn")
+const SLASH_SCENE := preload("res://scenes/battle/slash_effect.tscn")
 
 @onready var _player_unit: Node2D = $PlayerUnit
 @onready var _enemy_unit: Node2D = $EnemyUnit
@@ -18,9 +22,14 @@ const POPUP_SCENE := preload("res://scenes/battle/damage_popup.tscn")
 @onready var _end_panel: ColorRect = $UI/EndPanel
 @onready var _result_label: Label = $UI/EndPanel/EndVBox/ResultLabel
 @onready var _popup_layer: Node2D = $PopupLayer
+@onready var _camera: Camera2D = $Camera
 
 const TEST_HERO_ID := "ember_knight"
 const TEST_ENEMY_ID := "training_slime"
+
+const LUNGE_DISTANCE := 42.0
+const LUNGE_OUT := 0.12
+const LUNGE_BACK := 0.16
 
 var _rng: SeededRNG
 var _player_stats: Dictionary
@@ -122,7 +131,6 @@ func _begin_round() -> void:
 	_turn_label.text = "Round %d — your move" % _round
 	_set_actions_enabled(_player_stats.spd >= _enemy_stats.spd)
 	if _player_stats.spd < _enemy_stats.spd:
-		# Enemy acts first
 		_turn_label.text = "Round %d — enemy moves" % _round
 		await _enemy_turn()
 
@@ -153,6 +161,13 @@ func _player_uses(skill_id: String) -> void:
 
 	var element := skill.element if skill.element >= 0 else int(_player_stats.element)
 	var hit := Damage.is_hit(_player_stats, _enemy_stats, _rng)
+
+	# Lunge forward toward the enemy
+	_lunge(_player_unit, _enemy_unit.global_position)
+
+	# Damage / VFX lands at lunge peak
+	await get_tree().create_timer(LUNGE_OUT).timeout
+
 	if not hit:
 		_spawn_text_popup(_enemy_unit.global_position + Vector2(0, -180), "MISS", Color(0.7, 0.7, 0.7))
 		print("[Battle] %s -> %s MISSED" % [_player_hero.display_name, _enemy.display_name])
@@ -161,19 +176,24 @@ func _player_uses(skill_id: String) -> void:
 		_enemy_hp = max(0, _enemy_hp - int(result.damage))
 		_enemy_unit.set_hp(_enemy_hp, int(_enemy_stats.hp))
 		_spawn_popup(_enemy_unit.global_position + Vector2(0, -180), result.damage, result.is_crit, result.is_lucky)
+		_spawn_slash(_enemy_unit.global_position + Vector2(-20, -110), false)
+		if result.is_crit:
+			_shake_camera(9.0, 0.18)
+		else:
+			_shake_camera(3.0, 0.10)
 		EventBus.damage_dealt.emit(_player_hero.id, _enemy.id, result.damage, result.is_crit)
 		print("[Battle] %s -> %s : %d dmg (crit=%s lucky=%s elem=%.1fx)" % [
 			_player_hero.display_name, _enemy.display_name,
 			result.damage, result.is_crit, result.is_lucky, result.elemental,
 		])
 
-	await get_tree().create_timer(0.55).timeout
+	# Wait for lunge to finish + post-impact pause
+	await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
 
 	if _enemy_hp <= 0:
 		_end_battle(true)
 		return
 
-	# Enemy responds
 	await _enemy_turn()
 	if _battle_over:
 		return
@@ -185,6 +205,10 @@ func _enemy_turn() -> void:
 	await get_tree().create_timer(0.35).timeout
 
 	var hit := Damage.is_hit(_enemy_stats, _player_stats, _rng)
+
+	_lunge(_enemy_unit, _player_unit.global_position)
+	await get_tree().create_timer(LUNGE_OUT).timeout
+
 	if not hit:
 		_spawn_text_popup(_player_unit.global_position + Vector2(0, -180), "MISS", Color(0.7, 0.7, 0.7))
 		print("[Battle] %s -> %s MISSED" % [_enemy.display_name, _player_hero.display_name])
@@ -193,13 +217,46 @@ func _enemy_turn() -> void:
 		_player_hp = max(0, _player_hp - int(result.damage))
 		_player_unit.set_hp(_player_hp, int(_player_stats.hp))
 		_spawn_popup(_player_unit.global_position + Vector2(0, -180), result.damage, result.is_crit, result.is_lucky)
+		_spawn_slash(_player_unit.global_position + Vector2(20, -110), true)
+		if result.is_crit:
+			_shake_camera(9.0, 0.18)
+		else:
+			_shake_camera(3.0, 0.10)
 		EventBus.damage_dealt.emit(_enemy.id, _player_hero.id, result.damage, result.is_crit)
 		print("[Battle] %s -> %s : %d dmg" % [_enemy.display_name, _player_hero.display_name, result.damage])
 
-	await get_tree().create_timer(0.55).timeout
+	await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
 
 	if _player_hp <= 0:
 		_end_battle(false)
+
+
+# ─── VFX helpers ─────────────────────────────────────────────────────
+
+func _lunge(unit: Node2D, toward: Vector2) -> void:
+	var origin := unit.position
+	var dir := (toward - unit.global_position).normalized()
+	var target := origin + dir * LUNGE_DISTANCE
+	var tween := create_tween()
+	tween.tween_property(unit, "position", target, LUNGE_OUT).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	tween.tween_property(unit, "position", origin, LUNGE_BACK).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+
+
+func _spawn_slash(at: Vector2, flipped: bool) -> void:
+	var effect := SLASH_SCENE.instantiate()
+	_popup_layer.add_child(effect)
+	effect.global_position = at
+	effect.set_flipped(flipped)
+
+
+func _shake_camera(amount: float, duration: float) -> void:
+	var steps := 6
+	var step_dur := duration / steps
+	var tween := create_tween()
+	for i in steps:
+		var jitter := Vector2(_rng.range_float(-amount, amount), _rng.range_float(-amount, amount))
+		tween.tween_property(_camera, "offset", jitter, step_dur)
+	tween.tween_property(_camera, "offset", Vector2.ZERO, step_dur)
 
 
 func _spawn_popup(at: Vector2, amount: int, is_crit: bool, is_lucky: bool) -> void:

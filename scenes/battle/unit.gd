@@ -133,6 +133,7 @@ func set_dead(is_dead: bool) -> void:
 func _on_click_area_input(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if _is_dead: return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		print("[Unit] click on %s" % _name_label.text)
 		clicked.emit(self)
 
 

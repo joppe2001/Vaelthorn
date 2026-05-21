@@ -47,6 +47,11 @@ visible = false
 polygon = PackedVector2Array(-18, -310, 18, -310, 0, -288)
 color = Color(0.976, 0.78, 0.31, 1)
 
+[node name="ActiveMarker" type="Polygon2D" parent="."]
+visible = false
+polygon = PackedVector2Array(-58, 16, 58, 16, 58, 22, -58, 22)
+color = Color(0.26, 0.79, 1.0, 0.9)
+
 [node name="ClickArea" type="Area2D" parent="."]
 input_pickable = true
 monitorable = false

@@ -22,6 +22,7 @@ const STATUS_ICON_SCENE := preload("res://scenes/battle/status_icon.tscn")
 @onready var _hp_label: Label = $UIRoot/HPLabel
 @onready var _status_row: HBoxContainer = $UIRoot/StatusRow
 @onready var _target_marker: Polygon2D = $TargetMarker
+@onready var _active_marker: Polygon2D = $ActiveMarker
 @onready var _click_area: Area2D = $ClickArea
 
 var _base_color: Color = Color.WHITE
@@ -114,10 +115,18 @@ func set_targetable(can_target: bool) -> void:
 	_click_area.input_pickable = can_target
 
 
+## Show the cyan underline marker — used to indicate WHOSE turn it is right
+## now (the active actor). Distinct from set_selected (gold chevron = the
+## player's chosen attack target).
+func set_active(active: bool) -> void:
+	_active_marker.visible = active and not _is_dead
+
+
 func set_dead(is_dead: bool) -> void:
 	_is_dead = is_dead
 	if is_dead:
 		_target_marker.visible = false
+		_active_marker.visible = false
 		set_targetable(false)
 		var fade := create_tween()
 		fade.set_parallel(true)

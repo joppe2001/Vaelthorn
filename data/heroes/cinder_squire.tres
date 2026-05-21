@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1_hero"]
+
+[resource]
+script = ExtResource("1_hero")
+id = "cinder_squire"
+display_name = "Cinder Squire"
+lore = "Younger than they look. Lighter armor, lighter feet, faster blade."
+element = 0
+class_type = 0
+base_hp = 1000
+base_atk = 200
+base_def = 50
+base_spd = 130
+base_crit_rate = 0.20
+base_crit_dmg = 1.7
+base_acc = 0.95
+base_eva = 0.08
+base_luk = 70
+base_res = 0.0
+skill_ids = PackedStringArray("basic_attack", "flame_slash", "brace")
+ultimate_id = ""
+passive_id = ""
+sprite_color = Color(0.95, 0.78, 0.32, 1)
+sprite_scale = 4.0
+sprite_y_offset = -96.0

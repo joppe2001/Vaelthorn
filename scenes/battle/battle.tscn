@@ -81,17 +81,23 @@ mouse_filter = 2
 [node name="Camera" type="Camera2D" parent="."]
 position = Vector2(640, 360)
 
-[node name="PlayerUnit" parent="." instance=ExtResource("2")]
-position = Vector2(300, 540)
+[node name="PlayerUnit0" parent="." instance=ExtResource("2")]
+position = Vector2(160, 540)
+
+[node name="PlayerUnit1" parent="." instance=ExtResource("2")]
+position = Vector2(330, 540)
+
+[node name="PlayerUnit2" parent="." instance=ExtResource("2")]
+position = Vector2(500, 540)
 
 [node name="EnemyUnit0" parent="." instance=ExtResource("2")]
-position = Vector2(720, 540)
+position = Vector2(780, 540)
 
 [node name="EnemyUnit1" parent="." instance=ExtResource("2")]
-position = Vector2(900, 540)
+position = Vector2(950, 540)
 
 [node name="EnemyUnit2" parent="." instance=ExtResource("2")]
-position = Vector2(1080, 540)
+position = Vector2(1120, 540)
 
 [node name="PopupLayer" type="Node2D" parent="."]
 

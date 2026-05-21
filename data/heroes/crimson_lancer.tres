@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1_hero"]
+
+[resource]
+script = ExtResource("1_hero")
+id = "crimson_lancer"
+display_name = "Crimson Lancer"
+lore = "Veteran of the Calderan border wars. Stands at the front so others don't have to."
+element = 0
+class_type = 1
+base_hp = 1500
+base_atk = 150
+base_def = 100
+base_spd = 95
+base_crit_rate = 0.10
+base_crit_dmg = 1.5
+base_acc = 0.95
+base_eva = 0.05
+base_luk = 40
+base_res = 0.0
+skill_ids = PackedStringArray("basic_attack", "brace", "shatter")
+ultimate_id = ""
+passive_id = ""
+sprite_color = Color(0.78, 0.32, 0.32, 1)
+sprite_scale = 4.0
+sprite_y_offset = -96.0

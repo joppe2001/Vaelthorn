@@ -892,46 +892,40 @@ func _end_battle(victory: bool) -> void:
 	_end_panel.show()
 	EventBus.combat_ended.emit(_battle_id, victory)
 	if victory:
-		_award_battle_xp()
+		_award_battle_rewards()
 	print("[Battle] ended — ", "VICTORY" if victory else "DEFEAT")
 
 
-## Distribute battle XP at the end of a victory. Pool = base + (kills *
-## per_kill); split equally among heroes alive at the final bell. Dead
-## heroes get 0 — losing party members costs you progress, which feeds
-## into eventual difficulty tuning (heal items, revives, etc.).
-##
-## Each grant persists via SaveManager.add_hero_xp, which recomputes
-## the hero's level and writes the new entry to disk.
-const XP_VICTORY_BASE := 80
-const XP_PER_KILL := 25
+## Award battle rewards on victory. Drops gold + XP tonics into the
+## player's inventory — heroes do NOT gain XP directly from being in
+## the fight (BF / Idle Heroes pattern). The player decides which
+## hero to invest the tonics in via the Hero Detail screen.
+const REWARD_GOLD_BASE := 30
+const REWARD_GOLD_PER_KILL := 15
+const REWARD_SMALL_POTION_BASE := 1
+const REWARD_SMALL_POTION_PER_KILL := 1
+const REWARD_MEDIUM_POTION_CHANCE := 0.10
 
-func _award_battle_xp() -> void:
+func _award_battle_rewards() -> void:
 	var kills := 0
 	for hp in _enemies_hp:
 		if hp <= 0: kills += 1
-	var pool: int = XP_VICTORY_BASE + kills * XP_PER_KILL
 
-	var alive_idxs: Array[int] = []
-	for i in HERO_COUNT:
-		if _heroes_hp[i] > 0:
-			alive_idxs.append(i)
-	if alive_idxs.is_empty():
-		return  # shouldn't happen — battle would be a defeat — but guard anyway.
+	var gold: int = REWARD_GOLD_BASE + kills * REWARD_GOLD_PER_KILL
+	var small_potions: int = REWARD_SMALL_POTION_BASE + kills * REWARD_SMALL_POTION_PER_KILL
+	SaveManager.add_currency("gold", gold)
+	SaveManager.add_item(Items.XP_POTION_SMALL, small_potions)
 
-	var per_hero: int = int(pool / alive_idxs.size())
-	for i in alive_idxs:
-		var hero_id: String = _heroes_data[i].id
-		var result: Dictionary = SaveManager.add_hero_xp(hero_id, per_hero)
-		if result.leveled_up:
-			print("[Battle] %s LEVELED UP %d -> %d (+%d XP, total %d)" % [
-				hero_id, result.old_level, result.new_level,
-				result.xp_gained, result.total_xp,
-			])
-		else:
-			print("[Battle] %s +%d XP (Lv%d, total %d)" % [
-				hero_id, result.xp_gained, result.new_level, result.total_xp,
-			])
+	var medium_dropped := false
+	if _rng.range_float(0.0, 1.0) < REWARD_MEDIUM_POTION_CHANCE:
+		SaveManager.add_item(Items.XP_POTION_MEDIUM, 1)
+		medium_dropped = true
+
+	print("[Battle] rewards — +%d gold, +%d Small XP Tonic%s%s" % [
+		gold, small_potions,
+		" (and +1 Medium XP Tonic!)" if medium_dropped else "",
+		"",
+	])
 
 
 # ─── VFX helpers ─────────────────────────────────────────────────────

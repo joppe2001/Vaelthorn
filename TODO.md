@@ -23,16 +23,23 @@ short and prune as items ship; don't let it bloat into a wishlist.
       autosaves at every scene boundary. Game._ready() defers a
       _sync_from_save() so the persisted party loads on boot.
       Default state backfilled on legacy saves missing keys.
-- [x] **3d — Hero leveling (gameplay)**: shipped. scripts/runtime/
-      leveling.gd implements the docs formula (floor(50*L^1.7) per
-      level, stat = base * (1+0.04(L-1)+0.001(L-1)^2)). SaveManager
-      stores per-hero {xp,level} dict and exposes add_hero_xp() that
-      recomputes level on the fly. Battle.gd reads hero level at bind
-      time and scales stats accordingly; on victory it splits an XP
-      pool (80 base + 25/kill) among heroes alive at the final bell.
-      Level shown in the unit name banner ("Ember Knight Lv3").
-      TODO: level-up VFX banner mid-battle, hero roster UI showing
-      level + XP bar, tier/star multipliers (after ascension Phase 5).
+- [x] **3d — Hero leveling (proper BF / Idle Heroes pattern)**:
+      shipped. Battles drop gold + XP tonics into the inventory; the
+      player spends those at the Hero Detail screen to level up
+      specific heroes.
+        - scripts/runtime/leveling.gd: pure formulas from docs/03.
+        - scripts/data/items.gd: 3 XP tonic tiers (small/medium/large).
+        - SaveManager: inventory dict + per-hero {xp,level}; helpers
+          for add/consume_item, get/add/set_currency, get_hero_progress,
+          add_hero_xp (which re-derives level via Leveling).
+        - battle.gd: _award_battle_rewards (gold + small potions, 10%
+          medium drop) replaces the old direct-XP grant. Hero level
+          read on bind for stat scaling.
+        - hero_detail.gd: programmatic progression panel at top of
+          Right column — Lv, XP bar, gold-on-hand, per-tonic row with
+          owned count + cost + Use button. Click "Use" to spend.
+      TODO: level-up VFX banner, hero roster level badge, tier/star
+      multipliers (Phase 5 ascension).
 
 ## After progression
 

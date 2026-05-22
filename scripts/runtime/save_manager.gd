@@ -109,6 +109,34 @@ func add_hero_xp(hero_id: String, xp_delta: int) -> Dictionary:
 	}
 
 
+# ─── Inventory ───────────────────────────────────────────────────────
+
+## Quantity owned of an item id. Returns 0 if never picked up.
+func get_item(item_id: String) -> int:
+	var inv: Dictionary = _state.get("inventory", {})
+	return int(inv.get(item_id, 0))
+
+
+func add_item(item_id: String, count: int) -> void:
+	var inv: Dictionary = _state.get("inventory", {})
+	inv[item_id] = int(inv.get(item_id, 0)) + count
+	_state["inventory"] = inv
+	save_to_disk()
+
+
+## Atomic consume: returns true if the player had enough, deducts and
+## persists. Returns false (with no state change) if they didn't.
+func consume_item(item_id: String, count: int = 1) -> bool:
+	var inv: Dictionary = _state.get("inventory", {})
+	var owned: int = int(inv.get(item_id, 0))
+	if owned < count:
+		return false
+	inv[item_id] = owned - count
+	_state["inventory"] = inv
+	save_to_disk()
+	return true
+
+
 # ─── Currency ────────────────────────────────────────────────────────
 
 func get_currency(name: String) -> int:
@@ -174,6 +202,7 @@ func _default_state() -> Dictionary:
 		"currencies": {"gold": 0, "gems": 100, "stamina": 60},
 		"selected_party_ids": ["ember_knight", "crimson_lancer", "cinder_squire"],
 		"hero_levels": {},   # { hero_id: {xp: int, level: int} } — per-hero progression
+		"inventory": {},     # { item_id: count } — XP tonics + future items
 		"heroes": [],
 		"weapons": [],
 		"gear_inventory": [],

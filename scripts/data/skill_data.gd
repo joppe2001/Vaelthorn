@@ -23,6 +23,19 @@ class_name SkillData extends Resource
 ## ATB cost (Phase 2c+ uses this when round-based is replaced with ATB).
 @export var atb_cost: int = 100
 
+## Delivery shape:
+##   true  — melee. The caster dashes to APPROACH_GAP short of the
+##           target, halts, swings, halts, dashes back. Use for sword /
+##           thrust skills + most enemy attacks.
+##   false — ranged / spell. The caster stays at origin, plays the
+##           cast anim, and the effect (slash arc, status, heal popup)
+##           spawns at the target. Use for spells, ranged shots, and
+##           anything that "fires from far away."
+##
+## Future projectile work would extend the false path with a Tween
+## from caster.head -> target.center; the rest stays the same.
+@export var requires_approach: bool = true
+
 ## The skill's effect list. Order matters — they apply sequentially.
 ## Typical compositions:
 ##   [EffectDamage(power=1.0)]                         basic attack

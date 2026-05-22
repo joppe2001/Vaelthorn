@@ -38,12 +38,17 @@ const DASH_DUR_MAX := 0.40
 # Attack sequence beats: dash forward -> halt -> attack -> halt -> dash
 # back. The two halts sell the engagement, the body anim plays during
 # the attack window.
-const IMPACT_PRE_PAUSE := 0.20
+const IMPACT_PRE_PAUSE := 0.10
 const IMPACT_POST_PAUSE := 0.20
 # Mana Seed attack anim has its impact frame around 290ms in
 # (160+65+65). Waiting that long after play_attack() syncs the slash
 # arc + damage popup with the visible sword strike.
 const BODY_ANIM_TO_IMPACT := 0.29
+# Ranged / spell skills don't dash; instead the caster plays a cast
+# anim in place, holds it for this long, then the effect spawns at the
+# target. Slightly longer than melee impact so the spell reads as a
+# "wind-up" rather than an instant cast.
+const CAST_TO_IMPACT := 0.32
 const DEFAULT_ATB_COST := 100.0
 
 # Per-skill slash VFX variant. Maps a skill id to one of the animations
@@ -557,23 +562,16 @@ func _resolve_skill_enemy_single(skill: SkillData, hero_idx: int, target_idx: in
 	var hero_stats: Dictionary = _heroes_stats[hero_idx]
 	var target_unit: Node2D = _enemy_units[target_idx]
 	var body_anim: StringName = SKILL_TO_BODY_ANIM.get(skill.id, &"attack")
-
-	# 1) Dash forward, 2) brief halt, 3) attack + slash + popup,
-	# 4) brief halt, 5) dash back.
-	var dash := _dash_to(hero_unit, target_unit.global_position)
-	await get_tree().create_timer(dash.dur).timeout
-	await get_tree().create_timer(IMPACT_PRE_PAUSE).timeout
-
-	hero_unit.play_attack(body_anim)
-	await get_tree().create_timer(BODY_ANIM_TO_IMPACT).timeout
 	var attacker_eff := _effective_stats(hero_stats, hero_unit.statuses)
 	var target_eff := _effective_stats(_enemies_stats[target_idx], target_unit.statuses)
-	await _resolve_skill(skill, attacker_eff, target_eff,
-		_hero_id(hero_idx), _enemy_id(target_idx), target_unit, target_idx, false)
+	var resolve := func():
+		await _resolve_skill(skill, attacker_eff, target_eff,
+			_hero_id(hero_idx), _enemy_id(target_idx), target_unit, target_idx, false)
 
-	await get_tree().create_timer(IMPACT_POST_PAUSE).timeout
-	_dash_back(hero_unit, dash.origin, dash.dur)
-	await get_tree().create_timer(dash.dur).timeout
+	if skill.requires_approach:
+		await _melee_attack(hero_unit, target_unit.global_position, body_anim, resolve)
+	else:
+		await _ranged_cast(hero_unit, body_anim, resolve)
 
 
 func _resolve_skill_enemy_all(skill: SkillData, hero_idx: int) -> void:
@@ -591,26 +589,19 @@ func _resolve_skill_enemy_all(skill: SkillData, hero_idx: int) -> void:
 		centroid += _enemy_units[i].global_position
 	centroid /= alive_idxs.size()
 	var body_anim: StringName = SKILL_TO_BODY_ANIM.get(skill.id, &"attack")
-
-	# Same beat structure as single-target — dash to the centroid of
-	# alive enemies, halt, swing once, halt, retreat. The swing
-	# resolves on every alive enemy in one frame after the impact.
-	var dash := _dash_to(hero_unit, centroid)
-	await get_tree().create_timer(dash.dur).timeout
-	await get_tree().create_timer(IMPACT_PRE_PAUSE).timeout
-
-	hero_unit.play_attack(body_anim)
-	await get_tree().create_timer(BODY_ANIM_TO_IMPACT).timeout
 	var attacker_eff := _effective_stats(hero_stats, hero_unit.statuses)
-	for i in alive_idxs:
-		var target_unit: Node2D = _enemy_units[i]
-		var target_eff := _effective_stats(_enemies_stats[i], target_unit.statuses)
-		await _resolve_skill(skill, attacker_eff, target_eff,
-			_hero_id(hero_idx), _enemy_id(i), target_unit, i, false)
+	# AoE resolve fires on every alive enemy with the same swing.
+	var resolve := func():
+		for i in alive_idxs:
+			var target_unit: Node2D = _enemy_units[i]
+			var target_eff := _effective_stats(_enemies_stats[i], target_unit.statuses)
+			await _resolve_skill(skill, attacker_eff, target_eff,
+				_hero_id(hero_idx), _enemy_id(i), target_unit, i, false)
 
-	await get_tree().create_timer(IMPACT_POST_PAUSE).timeout
-	_dash_back(hero_unit, dash.origin, dash.dur)
-	await get_tree().create_timer(dash.dur).timeout
+	if skill.requires_approach:
+		await _melee_attack(hero_unit, centroid, body_anim, resolve)
+	else:
+		await _ranged_cast(hero_unit, body_anim, resolve)
 
 
 # ─── Enemy turn ──────────────────────────────────────────────────────
@@ -633,25 +624,16 @@ func _do_enemy_turn(idx: int) -> void:
 		var target_hero: Node2D = _hero_units[target_hero_idx]
 
 		var enemy_skill := _make_enemy_skill(idx)
-
-		# Same dash -> halt -> attack -> halt -> retreat beat as heroes.
-		# Goblins don't have an AnimatedSprite2D attack anim yet, so the
-		# play_attack is a no-op for them — the halt + slash + popup
-		# still sells the engagement.
-		var dash := _dash_to(enemy_unit, target_hero.global_position)
-		await get_tree().create_timer(dash.dur).timeout
-		await get_tree().create_timer(IMPACT_PRE_PAUSE).timeout
-
-		enemy_unit.play_attack()
-		await get_tree().create_timer(BODY_ANIM_TO_IMPACT).timeout
 		var attacker_eff := _effective_stats(enemy_stats, enemy_unit.statuses)
 		var target_eff := _effective_stats(_heroes_stats[target_hero_idx], target_hero.statuses)
-		await _resolve_skill(enemy_skill, attacker_eff, target_eff,
-			_enemy_id(idx), _hero_id(target_hero_idx), target_hero, target_hero_idx, true)
+		var resolve := func():
+			await _resolve_skill(enemy_skill, attacker_eff, target_eff,
+				_enemy_id(idx), _hero_id(target_hero_idx), target_hero, target_hero_idx, true)
 
-		await get_tree().create_timer(IMPACT_POST_PAUSE).timeout
-		_dash_back(enemy_unit, dash.origin, dash.dur)
-		await get_tree().create_timer(dash.dur).timeout
+		if enemy_skill.requires_approach:
+			await _melee_attack(enemy_unit, target_hero.global_position, &"attack", resolve)
+		else:
+			await _ranged_cast(enemy_unit, &"attack", resolve)
 
 	_atb_enemies[idx] = max(0.0, _atb_enemies[idx] - DEFAULT_ATB_COST)
 	_refresh_turn_order_bar()
@@ -914,6 +896,40 @@ func _dash_back(unit: Node2D, origin: Vector2, dur: float) -> void:
 	var tween := create_tween()
 	tween.tween_property(unit, "position", origin, dur) \
 		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+
+
+## Melee attack beat:
+##   dash forward -> halt -> body anim + resolve_effect -> halt -> dash back.
+## `resolve_fn` is a Callable that fires the slash arc, damage popups,
+## and any per-target effects — it runs after the body anim's impact
+## frame is showing. Used by both heroes and enemies, single-target and
+## AoE (the caller passes the centroid for AoE).
+func _melee_attack(attacker: Node2D, toward: Vector2, body_anim: StringName, resolve_fn: Callable) -> void:
+	var dash := _dash_to(attacker, toward)
+	await get_tree().create_timer(dash.dur).timeout
+	await get_tree().create_timer(IMPACT_PRE_PAUSE).timeout
+
+	attacker.play_attack(body_anim)
+	await get_tree().create_timer(BODY_ANIM_TO_IMPACT).timeout
+	await resolve_fn.call()
+
+	await get_tree().create_timer(IMPACT_POST_PAUSE).timeout
+	_dash_back(attacker, dash.origin, dash.dur)
+	await get_tree().create_timer(dash.dur).timeout
+
+
+## Ranged / spell beat:
+##   stay at origin -> cast anim -> wait CAST_TO_IMPACT -> resolve at
+##   target -> halt. No dash. Use for spells, ranged shots, or any
+##   skill that should fire from far away.
+##
+## When projectile system arrives, this is where the projectile tween
+## from attacker.head -> target.center would live (before resolve_fn).
+func _ranged_cast(attacker: Node2D, body_anim: StringName, resolve_fn: Callable) -> void:
+	attacker.play_attack(body_anim)
+	await get_tree().create_timer(CAST_TO_IMPACT).timeout
+	await resolve_fn.call()
+	await get_tree().create_timer(IMPACT_POST_PAUSE).timeout
 
 
 func _spawn_slash(at: Vector2, flipped: bool, variant: StringName = &"slash1", tint: Color = SLASH_TINT_NEUTRAL) -> void:

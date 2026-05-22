@@ -25,11 +25,17 @@ const HERO_COUNT := 3
 const ENEMY_COUNT := 3
 const TEST_ENEMY_ID := "training_slime"
 
-const LUNGE_DISTANCE := 42.0
-# Tuned to Mana Seed's recommended attack timing (160/65/65/200ms):
-# impact lands around frame 2 (~225ms), follow-through to ~490ms.
-const LUNGE_OUT := 0.225
-const LUNGE_BACK := 0.27
+# Distance the attacker stops short of the target. Big enough that the
+# attacker and target sprites don't overlap, small enough that the slash
+# arc + impact reads as a proper engagement.
+const APPROACH_GAP := 110.0
+# Maximum dash distance — never go further than this even if the target
+# is across the screen. Keeps super-long dashes from looking teleporty.
+const APPROACH_DASH_MAX := 520.0
+# Tuned to Mana Seed's recommended attack timing (160/65/65/200ms): the
+# attacker arrives at the target right as the slash impact frame plays.
+const LUNGE_OUT := 0.30
+const LUNGE_BACK := 0.30
 const DEFAULT_ATB_COST := 100.0
 
 # Per-skill slash VFX variant. Maps a skill id to one of the animations
@@ -846,13 +852,28 @@ func _end_battle(victory: bool) -> void:
 
 # ─── VFX helpers ─────────────────────────────────────────────────────
 
+## Dash the unit toward a target position, stopping APPROACH_GAP pixels
+## short so attacker and target sprites don't overlap. Then return to
+## the origin. Distance is capped at APPROACH_DASH_MAX so cross-screen
+## dashes don't read as a teleport.
+##
+## Timing stays fixed (LUNGE_OUT / LUNGE_BACK) so the attack body anim,
+## slash arc, and damage popup all land at the impact moment regardless
+## of how far the unit had to travel.
 func _lunge(unit: Node2D, toward: Vector2) -> void:
 	var origin := unit.position
-	var dir := (toward - unit.global_position).normalized()
-	var target := origin + dir * LUNGE_DISTANCE
+	var to_target: Vector2 = toward - unit.global_position
+	var dir: Vector2 = to_target.normalized()
+	# Stop short of the target. If the gap math goes negative (already
+	# closer than the gap), just don't move.
+	var travel: float = max(0.0, to_target.length() - APPROACH_GAP)
+	travel = min(travel, APPROACH_DASH_MAX)
+	var target: Vector2 = origin + dir * travel
 	var tween := create_tween()
-	tween.tween_property(unit, "position", target, LUNGE_OUT).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	tween.tween_property(unit, "position", origin, LUNGE_BACK).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+	tween.tween_property(unit, "position", target, LUNGE_OUT) \
+		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	tween.tween_property(unit, "position", origin, LUNGE_BACK) \
+		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 
 
 func _spawn_slash(at: Vector2, flipped: bool, variant: StringName = &"slash1", tint: Color = SLASH_TINT_NEUTRAL) -> void:

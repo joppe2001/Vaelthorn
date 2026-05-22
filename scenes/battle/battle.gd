@@ -46,6 +46,21 @@ const SKILL_TO_SLASH := {
 	"mend":           &"",
 }
 
+# Per-skill BODY animation (Mana Seed pONE3 attack types).
+# "attack" plays the slash 1 row, "slash2" plays slash 2, "thrust" plays
+# the forward jab. Empty string => no body anim (SELF skills).
+const SKILL_TO_BODY_ANIM := {
+	"basic_attack":   &"attack",
+	"flame_slash":    &"slash2",
+	"shatter":        &"thrust",
+	"pyre_breaker":   &"slash2",
+	"crimson_blitz":  &"thrust",
+	"enemy_basic":    &"attack",
+	"brace":          &"",
+	"aegis":          &"",
+	"mend":           &"",
+}
+
 # Slight color shifts so identical-data slimes are visually distinct.
 const ENEMY_TINTS := [
 	Color(0.45, 0.85, 0.55, 1),
@@ -492,7 +507,8 @@ func _resolve_skill_enemy_single(skill: SkillData, hero_idx: int, target_idx: in
 	var hero_unit: Node2D = _hero_units[hero_idx]
 	var hero_stats: Dictionary = _heroes_stats[hero_idx]
 	var target_unit: Node2D = _enemy_units[target_idx]
-	hero_unit.play_attack()
+	var body_anim: StringName = SKILL_TO_BODY_ANIM.get(skill.id, &"attack")
+	hero_unit.play_attack(body_anim)
 	_lunge(hero_unit, target_unit.global_position)
 	await get_tree().create_timer(LUNGE_OUT).timeout
 	var attacker_eff := _effective_stats(hero_stats, hero_unit.statuses)
@@ -516,7 +532,8 @@ func _resolve_skill_enemy_all(skill: SkillData, hero_idx: int) -> void:
 	for i in alive_idxs:
 		centroid += _enemy_units[i].global_position
 	centroid /= alive_idxs.size()
-	hero_unit.play_attack()
+	var body_anim: StringName = SKILL_TO_BODY_ANIM.get(skill.id, &"attack")
+	hero_unit.play_attack(body_anim)
 	_lunge(hero_unit, centroid)
 	await get_tree().create_timer(LUNGE_OUT).timeout
 

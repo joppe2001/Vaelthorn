@@ -85,14 +85,23 @@ func _on_anim_finished() -> void:
 		_anim_sprite.play(&"idle")
 
 
-## Play the attack swing animation. Non-blocking — animation_finished
+## Play an attack body animation. Non-blocking — animation_finished
 ## brings the sprite back to idle automatically.
-## No-op (briefly stalls) for units without an AnimatedSprite2D.
-func play_attack() -> void:
+##
+## Default variant is "attack" (slash 1). Other variants currently shipped:
+##   "slash2" — wider/heavier swing
+##   "thrust" — forward jab (sword extends straight rather than swung)
+## Falls back to "attack" if the requested variant isn't in the SpriteFrames.
+## No-op for units without an AnimatedSprite2D (slimes/goblins).
+func play_attack(variant: StringName = &"attack") -> void:
 	if not _using_anim_sprite: return
 	if _anim_sprite == null or _anim_sprite.sprite_frames == null: return
-	if not _anim_sprite.sprite_frames.has_animation(&"attack"): return
-	_anim_sprite.play(&"attack")
+	var anim: StringName = variant
+	if not _anim_sprite.sprite_frames.has_animation(anim):
+		anim = &"attack"
+	if not _anim_sprite.sprite_frames.has_animation(anim):
+		return
+	_anim_sprite.play(anim)
 
 
 ## Play the hurt recoil frame when this unit takes damage. Same pattern as

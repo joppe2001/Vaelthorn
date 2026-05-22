@@ -437,9 +437,11 @@ func _ensure_burn_ambient() -> void:
 		return
 	_burn_ambient = BURN_AMBIENT_SCENE.instantiate()
 	add_child(_burn_ambient)
-	# Sit at head height (anchor is computed from the measured sprite
-	# bounds, so this works for heroes and goblins alike).
-	_burn_ambient.position = Vector2(0, _char_top_y - 8.0)
+	# Sit slightly below center (~10% of the character's height below
+	# the midpoint). Reads as "the body is on fire" rather than putting
+	# the flame in front of the face. Works for any sprite size since
+	# it's relative to the measured character bounds.
+	_burn_ambient.position = Vector2(0, _char_top_y + _char_height * 0.60)
 
 
 func _clear_burn_ambient() -> void:

@@ -23,23 +23,25 @@ short and prune as items ship; don't let it bloat into a wishlist.
       autosaves at every scene boundary. Game._ready() defers a
       _sync_from_save() so the persisted party loads on boot.
       Default state backfilled on legacy saves missing keys.
-- [x] **3d — Hero leveling (proper BF / Idle Heroes pattern)**:
-      shipped. Battles drop gold + XP tonics into the inventory; the
-      player spends those at the Hero Detail screen to level up
-      specific heroes.
+- [~] **3d — Hero leveling**: infrastructure shipped, UI deferred until
+      the hub world exists (we don't have the BF-style village/menu
+      yet, so the upgrade screen has nowhere proper to live).
+        Shipped infrastructure:
         - scripts/runtime/leveling.gd: pure formulas from docs/03.
         - scripts/data/items.gd: 3 XP tonic tiers (small/medium/large).
         - SaveManager: inventory dict + per-hero {xp,level}; helpers
           for add/consume_item, get/add/set_currency, get_hero_progress,
           add_hero_xp (which re-derives level via Leveling).
         - battle.gd: _award_battle_rewards (gold + small potions, 10%
-          medium drop) replaces the old direct-XP grant. Hero level
-          read on bind for stat scaling.
-        - hero_detail.gd: programmatic progression panel at top of
-          Right column — Lv, XP bar, gold-on-hand, per-tonic row with
-          owned count + cost + Use button. Click "Use" to spend.
-      TODO: level-up VFX banner, hero roster level badge, tier/star
-      multipliers (Phase 5 ascension).
+          medium drop) — quietly accumulates in the save file so the
+          stockpile is waiting when the upgrade UI lands.
+        - battle.gd: hero level read on bind, stats scaled, "Lv N"
+          shown in unit name banner (always Lv 1 until upgrade UI ships).
+        Deferred until the hub world is built:
+        - Hero upgrade UI (level + XP bar + tonic spend buttons).
+        - Level-up VFX banner.
+        - Hero roster level badge.
+        - Tier/star multipliers (Phase 5 ascension).
 
 ## After progression
 

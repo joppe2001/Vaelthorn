@@ -9,15 +9,21 @@ headaches later.
 
 | Asset | Author | Source | License | Used in |
 |---|---|---|---|---|
-| Mana Seed Character Base (body v01) | Seliel the Shaper | [itch.io](https://seliel-the-shaper.itch.io/character-base) | Commercial use OK per pack license | `assets/sprites/manaseed/ember_knight/idle_sheet.png` (composited base) |
-| Mana Seed Hairstyle Pack (spk2 v05) | Seliel the Shaper | [itch.io](https://seliel-the-shaper.itch.io/character-base) (hairstyle add-on) | Commercial use OK per pack license | Composited onto the Ember Knight idle sheet above |
+| Mana Seed Character Base | Seliel the Shaper | [itch.io](https://seliel-the-shaper.itch.io/character-base) | Commercial use OK per pack license | All 6 hero `idle_sheet.png` + `combat_sheet.png` + `recovery_sheet.png` composites |
+| Mana Seed Hairstyle Pack | Seliel the Shaper | [itch.io](https://seliel-the-shaper.itch.io/character-base) (hairstyle add-on) | Commercial use OK per pack license | Composited onto each hero sheet (spk2/flat/pon1/bob2/fro1 variants) |
+| Mana Seed Sword & Shield Combat | Seliel the Shaper | [itch.io](https://seliel-the-shaper.itch.io/character-base) (combat add-on) | Commercial use OK per pack license | `combat_sheet.png` bodies + slash arc effect |
+| 0x72 Dungeon Tileset II v1.7 | 0x72 (Robert) | [itch.io](https://0x72.itch.io/dungeontileset-ii) | CC0 (public domain) | `assets/sprites/0x72/goblin/idle_f{0..3}.png` (Training Goblin) |
 
-**Note on the Ember Knight sheet:** the file at
-`assets/sprites/manaseed/ember_knight/idle_sheet.png` is a composite of
-the Mana Seed base body (`char_a_p1_0bas_humn_v01.png`) and the orange
-spiky hair (`char_a_p1_4har_spk2_v05.png`), produced via ImageMagick
-during Phase 1.5b. The two source PNGs themselves are not redistributed
-in this repo — only the composited result for our hero.
+**Note on Mana Seed composites:** every hero's sprite sheet
+(`assets/sprites/manaseed/<hero>/{idle,combat,recovery}_sheet.png`) is a
+composite of the Mana Seed base body, a hair file, and (for combat) the
+pONE sword-and-shield body sheet — produced via ImageMagick. The
+source PNGs themselves are not redistributed in this repo — only the
+composited results for our specific heroes.
+
+**Note on 0x72:** CC0 means we technically don't have to credit, but
+crediting good free-asset authors is the right move. Specifically, the
+goblin idle is `goblin_idle_anim_f{0..3}.png` from v1.7 of the pack.
 
 ## UI / Fonts / SFX / Music
 

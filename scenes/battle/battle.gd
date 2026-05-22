@@ -569,20 +569,26 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 		"damage":
 			var amount: int = int(result.damage)
 			var target_max_hp: int
+			var killed: bool = false
 			if target_is_hero:
 				_heroes_hp[target_idx] = max(0, _heroes_hp[target_idx] - amount)
 				target_max_hp = int(_heroes_stats[target_idx].hp)
 				target_unit.set_hp(_heroes_hp[target_idx], target_max_hp)
 				if _heroes_hp[target_idx] <= 0:
 					target_unit.set_dead(true)
+					killed = true
 			else:
 				_enemies_hp[target_idx] = max(0, _enemies_hp[target_idx] - amount)
 				target_max_hp = int(_enemies_stats[target_idx].hp)
 				target_unit.set_hp(_enemies_hp[target_idx], target_max_hp)
 				if _enemies_hp[target_idx] <= 0:
 					target_unit.set_dead(true)
+					killed = true
 					if _selected_enemy_idx == target_idx:
 						_select_enemy(0)
+			# Play hurt recoil if the unit survived the hit (dead anim plays via set_dead)
+			if not killed:
+				target_unit.play_hurt()
 			_spawn_popup(target_unit.global_position + Vector2(0, -200), amount, result.is_crit, result.is_lucky)
 			# Determine flip: if the attacker is on the LEFT of the target, slash unflipped (concave-right)
 			var flipped: bool = target_unit.global_position.x < _attacker_x(attacker_id)

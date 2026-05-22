@@ -95,6 +95,16 @@ func play_attack() -> void:
 	_anim_sprite.play(&"attack")
 
 
+## Play the hurt recoil frame when this unit takes damage. Same pattern as
+## play_attack — non-blocking, returns to idle via animation_finished.
+func play_hurt() -> void:
+	if _is_dead: return
+	if not _using_anim_sprite: return
+	if _anim_sprite == null or _anim_sprite.sprite_frames == null: return
+	if not _anim_sprite.sprite_frames.has_animation(&"hurt"): return
+	_anim_sprite.play(&"hurt")
+
+
 func _ensure_ultimate_gauge() -> void:
 	var root: Control = $UIRoot
 	if root.has_node("UltimateGauge"):
@@ -216,10 +226,13 @@ func set_dead(is_dead: bool) -> void:
 		_target_marker.visible = false
 		_active_marker.visible = false
 		set_targetable(false)
+		# Play the lying-down dead frame if the unit has one (heroes do, slimes don't)
+		if _using_anim_sprite and _anim_sprite != null and _anim_sprite.sprite_frames != null and _anim_sprite.sprite_frames.has_animation(&"dead"):
+			_anim_sprite.play(&"dead")
 		var fade := create_tween()
 		fade.set_parallel(true)
 		if _using_anim_sprite:
-			fade.tween_property(_anim_sprite, "modulate:a", 0.35, 0.4)
+			fade.tween_property(_anim_sprite, "modulate:a", 0.45, 0.6)
 		else:
 			fade.tween_property(_sprite, "color:a", 0.35, 0.4)
 		fade.tween_property(_shadow, "modulate:a", 0.15, 0.4)

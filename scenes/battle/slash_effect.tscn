@@ -1,16 +1,49 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scenes/battle/slash_effect.gd" id="1"]
 [ext_resource type="Texture2D" path="res://assets/sprites/manaseed/effects/slash_effects.png" id="2_tex"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_slash_peak"]
+[sub_resource type="AtlasTexture" id="AT_slash_0"]
+atlas = ExtResource("2_tex")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AT_slash_1"]
+atlas = ExtResource("2_tex")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AT_slash_2"]
 atlas = ExtResource("2_tex")
 region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AT_slash_3"]
+atlas = ExtResource("2_tex")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_slash"]
+animations = [{
+"frames": [{
+"duration": 0.06,
+"texture": SubResource("AT_slash_0")
+}, {
+"duration": 0.06,
+"texture": SubResource("AT_slash_1")
+}, {
+"duration": 0.10,
+"texture": SubResource("AT_slash_2")
+}, {
+"duration": 0.10,
+"texture": SubResource("AT_slash_3")
+}],
+"loop": false,
+"name": &"slash",
+"speed": 1.0
+}]
 
 [node name="SlashEffect" type="Node2D"]
 script = ExtResource("1")
 
-[node name="Sprite" type="Sprite2D" parent="."]
-texture = SubResource("AtlasTexture_slash_peak")
+[node name="SlashAnim" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_slash")
+animation = &"slash"
 scale = Vector2(6, 6)
 modulate = Color(1, 1, 0.85, 1)

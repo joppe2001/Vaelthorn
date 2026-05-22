@@ -55,6 +55,13 @@ path. Each item is small + visible.
       ELEMENT_TINT[skill.element], with attacker.element as the inherit
       fallback. FIRE=orange-red, WATER=cyan, EARTH=amber, WIND=pale
       green, LIGHT=yellow, DARK=purple.
+- [x] **Element burst VFX** — shipped. Real pixel-art bursts from
+      Pimen's spell packs spawn on top of the slash for FIRE / WATER /
+      EARTH / WIND. LIGHT and DARK still fall back to tint-only until
+      we source packs for them.
+- [x] **Buff/Debuff VFX swapped to pixel art** — replaced the earlier
+      code-driven gold ring + jagged spokes with Pimen sprite sheets:
+      buff = shield rising, debuff = skull pierced by arrow.
 - [ ] **Crit punch-up** — short screen flash + brief time-slow (Engine.
       time_scale = 0.5 for ~150 ms) + extra slash overlay. Crits should
       stop you cold for a beat.

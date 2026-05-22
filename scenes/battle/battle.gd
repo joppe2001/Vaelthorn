@@ -15,6 +15,7 @@ const HEAL_VFX_SCENE := preload("res://scenes/battle/heal_effect.tscn")
 const BUFF_VFX_SCENE := preload("res://scenes/battle/buff_effect.tscn")
 const DEBUFF_VFX_SCENE := preload("res://scenes/battle/debuff_effect.tscn")
 const ULT_CUTIN_SCENE := preload("res://scenes/battle/ult_cutin.tscn")
+const ELEMENT_BURST_SCENE := preload("res://scenes/battle/element_burst.tscn")
 const MAX_SKILL_SLOTS := 4
 
 # Fallback if Game.selected_party_ids is empty/malformed. Party Builder
@@ -660,34 +661,31 @@ func _make_enemy_skill(idx: int) -> SkillData:
 
 func _resolve_skill(skill: SkillData, attacker_stats: Dictionary, target_stats: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int, target_is_hero: bool) -> void:
 	var slash_variant: StringName = SKILL_TO_SLASH.get(skill.id, &"slash1")
-	# Resolve the slash tint once per skill cast: skill.element wins
-	# (>= 0), else inherit from the attacker, else fall back to the
-	# neutral cream color.
-	var slash_tint: Color = _resolve_slash_tint(skill, attacker_stats)
+	# Resolve the element once per skill cast so the slash tint and the
+	# element burst VFX stay in sync. -1 means "no element" (neutral
+	# slash, no burst spawned).
+	var element: int = _resolve_element(skill, attacker_stats)
+	var slash_tint: Color = ELEMENT_TINT[element] if element >= 0 and element < ELEMENT_TINT.size() else SLASH_TINT_NEUTRAL
 	for effect in skill.effects:
 		var ctx := EffectContext.new(attacker_stats, target_stats, attacker_id, target_id, skill, _rng)
 		var result: Dictionary = effect.apply(ctx)
-		_apply_result(result, attacker_id, target_id, target_unit, target_idx, target_is_hero, slash_variant, slash_tint)
+		_apply_result(result, attacker_id, target_id, target_unit, target_idx, target_is_hero, slash_variant, slash_tint, element)
 		if result.get("kind") == "miss":
 			break
 
 
-## Pick the slash modulate color for a single skill cast.
-##   1. skill.element >= 0 — explicit override on the skill itself
-##   2. attacker_stats.element — caster's element when the skill inherits
-##   3. neutral cream — final fallback (basic attacks, enemy slams)
-func _resolve_slash_tint(skill: SkillData, attacker_stats: Dictionary) -> Color:
-	var element: int = -1
+## Pick the element for a single skill cast: skill.element overrides
+## (>= 0), otherwise inherit from the caster's element stat. Returns -1
+## if there's no element at all — neutral attack, no burst VFX.
+func _resolve_element(skill: SkillData, attacker_stats: Dictionary) -> int:
 	if skill.element >= 0:
-		element = skill.element
-	elif attacker_stats.has("element"):
-		element = int(attacker_stats["element"])
-	if element >= 0 and element < ELEMENT_TINT.size():
-		return ELEMENT_TINT[element]
-	return SLASH_TINT_NEUTRAL
+		return skill.element
+	if attacker_stats.has("element"):
+		return int(attacker_stats["element"])
+	return -1
 
 
-func _apply_result(result: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int, target_is_hero: bool, slash_variant: StringName = &"slash1", slash_tint: Color = Color(1.0, 1.0, 0.85, 1.0)) -> void:
+func _apply_result(result: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int, target_is_hero: bool, slash_variant: StringName = &"slash1", slash_tint: Color = Color(1.0, 1.0, 0.85, 1.0), element: int = -1) -> void:
 	match result.get("kind", "none"):
 		"damage":
 			var amount: int = int(result.damage)
@@ -722,6 +720,11 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 				# Anchor the slash at the target's center, with a small
 				# horizontal nudge in the direction the sword came from.
 				_spawn_slash(target_unit.get_anchor(&"center") + Vector2(slash_x, 0), flipped, slash_variant, slash_tint)
+			# Element burst sits on top of the slash arc — pixel-art
+			# fireball / splash / shard / swoosh per element. Only
+			# spawned when the element has a shipped pack (0..3).
+			if element >= 0 and element <= 3:
+				_spawn_element_burst(target_unit.get_anchor(&"center"), element)
 			if result.is_crit:
 				_shake_camera(12.0, 0.22)
 			else:
@@ -963,6 +966,13 @@ func _spawn_heal_vfx(target_unit: Node2D) -> void:
 	_popup_layer.add_child(effect)
 	# Center on the torso — shimmer rises from there through the head.
 	effect.global_position = target_unit.get_anchor(&"center")
+
+
+func _spawn_element_burst(at: Vector2, element: int) -> void:
+	var burst := ELEMENT_BURST_SCENE.instantiate()
+	_popup_layer.add_child(burst)
+	burst.global_position = at
+	burst.play_element(element)
 
 
 ## Spawn the ultimate cut-in overlay, hand it the ult/caster names, and

@@ -1,0 +1,124 @@
+[gd_scene load_steps=28 format=3]
+
+[ext_resource type="Script" path="res://scenes/battle/element_burst.gd" id="0_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/elements/fire_burst.png" id="1_fire"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/elements/water_burst.png" id="2_water"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/elements/earth_burst.png" id="3_earth"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/elements/wind_burst.png" id="4_wind"]
+
+[sub_resource type="AtlasTexture" id="AT_fire_0"]
+atlas = ExtResource("1_fire")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_fire_1"]
+atlas = ExtResource("1_fire")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_fire_2"]
+atlas = ExtResource("1_fire")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_fire_3"]
+atlas = ExtResource("1_fire")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_fire_4"]
+atlas = ExtResource("1_fire")
+region = Rect2(128, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_fire_5"]
+atlas = ExtResource("1_fire")
+region = Rect2(160, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_fire_6"]
+atlas = ExtResource("1_fire")
+region = Rect2(192, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_water_0"]
+atlas = ExtResource("2_water")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_water_1"]
+atlas = ExtResource("2_water")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_water_2"]
+atlas = ExtResource("2_water")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_water_3"]
+atlas = ExtResource("2_water")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_earth_0"]
+atlas = ExtResource("3_earth")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_earth_1"]
+atlas = ExtResource("3_earth")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_earth_2"]
+atlas = ExtResource("3_earth")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_earth_3"]
+atlas = ExtResource("3_earth")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_earth_4"]
+atlas = ExtResource("3_earth")
+region = Rect2(128, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_earth_5"]
+atlas = ExtResource("3_earth")
+region = Rect2(160, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_wind_0"]
+atlas = ExtResource("4_wind")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_wind_1"]
+atlas = ExtResource("4_wind")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_wind_2"]
+atlas = ExtResource("4_wind")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AT_wind_3"]
+atlas = ExtResource("4_wind")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_burst"]
+animations = [
+{
+"frames": [{"duration": 0.05, "texture": SubResource("AT_fire_0")}, {"duration": 0.05, "texture": SubResource("AT_fire_1")}, {"duration": 0.05, "texture": SubResource("AT_fire_2")}, {"duration": 0.05, "texture": SubResource("AT_fire_3")}, {"duration": 0.05, "texture": SubResource("AT_fire_4")}, {"duration": 0.05, "texture": SubResource("AT_fire_5")}, {"duration": 0.05, "texture": SubResource("AT_fire_6")}],
+"loop": false,
+"name": &"fire",
+"speed": 1.0
+}, {
+"frames": [{"duration": 0.06, "texture": SubResource("AT_water_0")}, {"duration": 0.06, "texture": SubResource("AT_water_1")}, {"duration": 0.06, "texture": SubResource("AT_water_2")}, {"duration": 0.06, "texture": SubResource("AT_water_3")}],
+"loop": false,
+"name": &"water",
+"speed": 1.0
+}, {
+"frames": [{"duration": 0.055, "texture": SubResource("AT_earth_0")}, {"duration": 0.055, "texture": SubResource("AT_earth_1")}, {"duration": 0.055, "texture": SubResource("AT_earth_2")}, {"duration": 0.055, "texture": SubResource("AT_earth_3")}, {"duration": 0.055, "texture": SubResource("AT_earth_4")}, {"duration": 0.055, "texture": SubResource("AT_earth_5")}],
+"loop": false,
+"name": &"earth",
+"speed": 1.0
+}, {
+"frames": [{"duration": 0.055, "texture": SubResource("AT_wind_0")}, {"duration": 0.055, "texture": SubResource("AT_wind_1")}, {"duration": 0.055, "texture": SubResource("AT_wind_2")}, {"duration": 0.055, "texture": SubResource("AT_wind_3")}],
+"loop": false,
+"name": &"wind",
+"speed": 1.0
+}
+]
+
+[node name="ElementBurst" type="Node2D"]
+script = ExtResource("0_script")
+
+[node name="Anim" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_burst")
+animation = &"fire"
+scale = Vector2(4, 4)

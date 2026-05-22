@@ -361,6 +361,9 @@ func set_dead(is_dead: bool) -> void:
 		_target_marker.visible = false
 		_active_marker.visible = false
 		set_targetable(false)
+		# Statuses don't persist past death — a corpse can't be burning
+		# or stunned. Clear the StatusManager and tear down the badges.
+		_clear_all_statuses()
 		# Play the lying-down dead frame if the unit has one (heroes do, slimes don't)
 		if _using_anim_sprite and _anim_sprite != null and _anim_sprite.sprite_frames != null and _anim_sprite.sprite_frames.has_animation(&"dead"):
 			_anim_sprite.play(&"dead")
@@ -373,6 +376,13 @@ func set_dead(is_dead: bool) -> void:
 		fade.tween_property(_shadow, "modulate:a", 0.15, 0.4)
 	else:
 		set_targetable(true)
+
+
+func _clear_all_statuses() -> void:
+	statuses.active.clear()
+	for sid in _icons_by_status.keys():
+		_icons_by_status[sid].queue_free()
+	_icons_by_status.clear()
 
 
 func _on_click_area_input(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:

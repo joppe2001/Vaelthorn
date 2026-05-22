@@ -1,22 +1,36 @@
 extends PanelContainer
 ## Visual badge for one active status on a unit.
 ##
-## Renders a pixel-art icon (Pimen buff/debuff packs) — frame 5 of the
-## animation, the "settled" pose where the shield is up or the skull is
-## pierced. Buff vs debuff is auto-detected from the StatusEffectData:
+## Renders a pixel-art icon picked per-status from the Pimen pack(s).
+## Each status id maps to a specific sheet + frame index — so ATK_UP
+## shows a bicep, DEF_DOWN shows an arrow-pierced shield, etc.
 ##
+## Statuses not in ICONS_BY_ID fall back to a generic buff (shield) or
+## debuff (skull) icon, classified by StatusEffectData fields:
 ##   modifier_amount > 0  AND  tick_kind == NONE  AND  not skip_turn
-##     -> buff icon (shield)
+##     -> generic buff icon
 ##   anything else
-##     -> debuff icon (skull)
-##
-## Future: per-status icon override on StatusEffectData. For now,
-## generic-by-type is enough to feel pixel-art native.
+##     -> generic debuff icon
 
-const BUFF_SHEET := preload("res://assets/sprites/vfx/status/buff_shield.png")
-const DEBUFF_SHEET := preload("res://assets/sprites/vfx/status/debuff_skull.png")
-const SETTLED_FRAME := 5            # peak/settled frame index in both packs
-const FRAME_SIZE := 24
+const BUFF_ATK_SHEET     := preload("res://assets/sprites/vfx/status/buff_atk.png")
+const BUFF_SHIELD_SHEET  := preload("res://assets/sprites/vfx/status/buff_shield.png")
+const DEBUFF_ARMOR_SHEET := preload("res://assets/sprites/vfx/status/debuff_armor.png")
+const DEBUFF_STUN_SHEET  := preload("res://assets/sprites/vfx/status/debuff_stun.png")
+const DEBUFF_SKULL_SHEET := preload("res://assets/sprites/vfx/status/debuff_skull.png")
+const FIRE_BURST_SHEET   := preload("res://assets/sprites/vfx/elements/fire_burst.png")
+
+# sheet, frame index, frame size (px). Pimen status sheets are 24x24,
+# the fire-burst frames borrowed for Burn are 32x32 — the TextureRect
+# scales both to fit the same on-screen badge.
+const ICONS_BY_ID := {
+	"atk_up":   {"sheet": BUFF_ATK_SHEET,     "frame": 2, "size": 24},
+	"def_up":   {"sheet": BUFF_SHIELD_SHEET,  "frame": 5, "size": 24},
+	"def_down": {"sheet": DEBUFF_ARMOR_SHEET, "frame": 6, "size": 24},
+	"burn":     {"sheet": FIRE_BURST_SHEET,   "frame": 2, "size": 32},
+	"stun":     {"sheet": DEBUFF_STUN_SHEET,  "frame": 4, "size": 24},
+}
+const GENERIC_BUFF   := {"sheet": BUFF_SHIELD_SHEET,  "frame": 5, "size": 24}
+const GENERIC_DEBUFF := {"sheet": DEBUFF_SKULL_SHEET, "frame": 5, "size": 24}
 
 @onready var _icon: TextureRect = $V/Icon
 @onready var _turns: Label = $V/Turns
@@ -25,8 +39,6 @@ var _bg_style: StyleBoxFlat
 
 
 func _ready() -> void:
-	# Subtle dark backdrop so the icon stays readable against bright
-	# battle backgrounds. The icon itself carries the color/identity.
 	_bg_style = StyleBoxFlat.new()
 	_bg_style.bg_color = Color(0.05, 0.05, 0.08, 0.55)
 	_bg_style.border_color = Color(0, 0, 0, 0.7)
@@ -42,13 +54,11 @@ func _ready() -> void:
 
 
 func bind(data: StatusEffectData, turns: int) -> void:
-	var is_buff: bool = data.modifier_amount > 0.0 \
-		and data.tick_kind == StatusEffectData.TickKind.NONE \
-		and not data.skip_turn
-	var sheet: Texture2D = BUFF_SHEET if is_buff else DEBUFF_SHEET
+	var entry: Dictionary = _pick_icon(data)
 	var atlas := AtlasTexture.new()
-	atlas.atlas = sheet
-	atlas.region = Rect2(SETTLED_FRAME * FRAME_SIZE, 0, FRAME_SIZE, FRAME_SIZE)
+	atlas.atlas = entry["sheet"]
+	var size: int = entry["size"]
+	atlas.region = Rect2(entry["frame"] * size, 0, size, size)
 	_icon.texture = atlas
 	_turns.text = str(turns)
 	tooltip_text = "%s — %d turn%s" % [data.display_name, turns, "" if turns == 1 else "s"]
@@ -57,3 +67,15 @@ func bind(data: StatusEffectData, turns: int) -> void:
 func set_turns(turns: int) -> void:
 	_turns.text = str(turns)
 	tooltip_text = tooltip_text.split(" — ")[0] + " — %d turn%s" % [turns, "" if turns == 1 else "s"]
+
+
+## Look up the icon entry for a status. Returns the explicit per-id
+## mapping if one exists; otherwise picks generic buff vs debuff based
+## on the StatusEffectData fields.
+func _pick_icon(data: StatusEffectData) -> Dictionary:
+	if ICONS_BY_ID.has(data.id):
+		return ICONS_BY_ID[data.id]
+	var is_buff: bool = data.modifier_amount > 0.0 \
+		and data.tick_kind == StatusEffectData.TickKind.NONE \
+		and not data.skip_turn
+	return GENERIC_BUFF if is_buff else GENERIC_DEBUFF

@@ -85,20 +85,31 @@ func _on_anim_finished() -> void:
 		_anim_sprite.play(&"idle")
 
 
-## Play an attack body animation. Non-blocking — animation_finished
-## brings the sprite back to idle automatically.
+## Play a one-shot body animation, then auto-return to idle via the
+## animation_finished hook. Non-blocking.
 ##
-## Default variant is "attack" (slash 1). Other variants currently shipped:
+## Currently shipped variants:
+##   "attack" — slash 1 (default for offensive skills)
 ##   "slash2" — wider/heavier swing
-##   "thrust" — forward jab (sword extends straight rather than swung)
-## Falls back to "attack" if the requested variant isn't in the SpriteFrames.
+##   "thrust" — forward jab
+##   "brace"  — east-facing crouch w/ shield up (Brace / Aegis)
+##   "cast"   — upright guard pose (Mend channel)
+##
+## Empty StringName => no-op (caller signalled "no body anim for this skill").
+## A missing offensive variant (slash2/thrust) falls back to "attack" so a
+## broken data wire still reads as a hit. Defensive poses (brace/cast) just
+## no-op when missing — we never want a heal silently becoming a slash.
 ## No-op for units without an AnimatedSprite2D (slimes/goblins).
 func play_attack(variant: StringName = &"attack") -> void:
+	if variant == &"": return
 	if not _using_anim_sprite: return
 	if _anim_sprite == null or _anim_sprite.sprite_frames == null: return
 	var anim: StringName = variant
 	if not _anim_sprite.sprite_frames.has_animation(anim):
-		anim = &"attack"
+		if variant in [&"slash2", &"thrust"]:
+			anim = &"attack"
+		else:
+			return
 	if not _anim_sprite.sprite_frames.has_animation(anim):
 		return
 	_anim_sprite.play(anim)

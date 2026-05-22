@@ -5,12 +5,12 @@ short and prune as items ship; don't let it bloat into a wishlist.
 
 ## Animation polish (continuing Phase 4)
 
-- [ ] **4c — Armed idle (pONE2)**: sword + shield visible in the idle pose,
-      not just bare hands. Composite pONE2 + p1 hair, swap idle frame.
-      ~30 min.
-- [ ] **4d — Self-skill animations**: Brace / Aegis / Mend play a defensive
-      or channeling pose (pONE2 has stances we can use) instead of just
-      the scale puff. ~30 min.
+- [x] **4c — Armed idle (pONE2)**: shipped. Sword + shield + pose-aligned
+      hair composited from native pONE2/pONE3 layers across all 6 heroes
+      (armed_idle / combat / recovery sheets).
+- [x] **4d — Self-skill animations**: shipped. Brace/Aegis play the east-
+      facing crouch pose, Mend plays the upright guard / channel pose,
+      held briefly before the buff/heal lands.
 - [ ] **4f — More attack variants**: heroes currently all use Slash 1.
       Phase 7 (weapons) is where Stormarcher gets a bow, Priestess a
       staff, etc. Requires additional Mana Seed packs.

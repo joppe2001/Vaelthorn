@@ -46,9 +46,14 @@ const SKILL_TO_SLASH := {
 	"mend":           &"",
 }
 
-# Per-skill BODY animation (Mana Seed pONE3 attack types).
-# "attack" plays the slash 1 row, "slash2" plays slash 2, "thrust" plays
-# the forward jab. Empty string => no body anim (SELF skills).
+# Per-skill BODY animation. Maps a skill id to a named animation in the
+# hero's SpriteFrames.
+#   "attack" — slash 1 (default basic attack)
+#   "slash2" — wider/heavier swing
+#   "thrust" — forward jab
+#   "brace"  — east-facing crouch w/ shield up (defensive buffs)
+#   "cast"   — upright guard pose (channeling heal / support)
+#   ""       — no body anim (use scale puff only)
 const SKILL_TO_BODY_ANIM := {
 	"basic_attack":   &"attack",
 	"flame_slash":    &"slash2",
@@ -56,9 +61,9 @@ const SKILL_TO_BODY_ANIM := {
 	"pyre_breaker":   &"slash2",
 	"crimson_blitz":  &"thrust",
 	"enemy_basic":    &"attack",
-	"brace":          &"",
-	"aegis":          &"",
-	"mend":           &"",
+	"brace":          &"brace",
+	"aegis":          &"brace",
+	"mend":           &"cast",
 }
 
 # Slight color shifts so identical-data slimes are visually distinct.
@@ -493,10 +498,16 @@ func _hero_uses_skill(skill: SkillData, hero_idx: int) -> void:
 func _resolve_skill_self(skill: SkillData, hero_idx: int) -> void:
 	var hero_unit: Node2D = _hero_units[hero_idx]
 	var hero_stats: Dictionary = _heroes_stats[hero_idx]
+	# Body pose (crouch for Brace/Aegis, guard-up for Mend). play_attack
+	# is a no-op for &"" and the animation auto-returns to idle when done.
+	var body_anim: StringName = SKILL_TO_BODY_ANIM.get(skill.id, &"")
+	hero_unit.play_attack(body_anim)
 	var puff := create_tween()
 	puff.tween_property(hero_unit, "scale", Vector2(1.06, 1.06), 0.10)
 	puff.tween_property(hero_unit, "scale", Vector2(1.0, 1.0), 0.18)
-	await get_tree().create_timer(0.15).timeout
+	# Hold the pose a beat before applying the effect so the brace / cast
+	# stance is clearly visible before the status icon / heal popup lands.
+	await get_tree().create_timer(0.30).timeout
 	var attacker_eff := _effective_stats(hero_stats, hero_unit.statuses)
 	var target_eff := _effective_stats(hero_stats, hero_unit.statuses)
 	await _resolve_skill(skill, attacker_eff, target_eff, _hero_id(hero_idx), _hero_id(hero_idx), hero_unit, hero_idx, true)

@@ -1,4 +1,4 @@
-[gd_resource type="SpriteFrames" load_steps=21 format=3]
+[gd_resource type="SpriteFrames" load_steps=23 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/sprites/manaseed/ember_knight/armed_idle_sheet.png" id="1_armed"]
 [ext_resource type="Texture2D" path="res://assets/sprites/manaseed/ember_knight/combat_sheet.png" id="2_combat"]
@@ -75,6 +75,14 @@ region = Rect2(320, 192, 64, 64)
 [sub_resource type="AtlasTexture" id="AT_dead"]
 atlas = ExtResource("3_recovery")
 region = Rect2(448, 192, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AT_brace"]
+atlas = ExtResource("1_armed")
+region = Rect2(0, 448, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AT_cast"]
+atlas = ExtResource("1_armed")
+region = Rect2(64, 448, 64, 64)
 
 [resource]
 animations = [{
@@ -160,5 +168,21 @@ animations = [{
 }],
 "loop": false,
 "name": &"dead",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.6,
+"texture": SubResource("AT_brace")
+}],
+"loop": false,
+"name": &"brace",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.6,
+"texture": SubResource("AT_cast")
+}],
+"loop": false,
+"name": &"cast",
 "speed": 1.0
 }]

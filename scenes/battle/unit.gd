@@ -178,9 +178,13 @@ func _ensure_ultimate_gauge() -> void:
 
 
 func _process(delta: float) -> void:
-	# Idle bob
-	_t += delta * 2.4
-	_sprite_holder.position.y = sin(_t) * 3.0
+	# Idle bob — only for placeholder Polygon2D units, since real
+	# AnimatedSprite2D characters already have breathing built into
+	# their idle animation. Adding a script bob on top makes the
+	# heroes look like they're floating.
+	if not _using_anim_sprite:
+		_t += delta * 2.4
+		_sprite_holder.position.y = sin(_t) * 3.0
 	# Subtle pulse on the target marker so it's eye-catching
 	if _is_selected:
 		_marker_t += delta * 5.0

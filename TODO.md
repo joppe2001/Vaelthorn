@@ -23,8 +23,16 @@ short and prune as items ship; don't let it bloat into a wishlist.
       autosaves at every scene boundary. Game._ready() defers a
       _sync_from_save() so the persisted party loads on boot.
       Default state backfilled on legacy saves missing keys.
-- [ ] **3d — Hero leveling**: XP from battles, level-up animation, stats
-      scale per level. Per the leveling formula in docs/03-heroes.md.
+- [x] **3d — Hero leveling (gameplay)**: shipped. scripts/runtime/
+      leveling.gd implements the docs formula (floor(50*L^1.7) per
+      level, stat = base * (1+0.04(L-1)+0.001(L-1)^2)). SaveManager
+      stores per-hero {xp,level} dict and exposes add_hero_xp() that
+      recomputes level on the fly. Battle.gd reads hero level at bind
+      time and scales stats accordingly; on victory it splits an XP
+      pool (80 base + 25/kill) among heroes alive at the final bell.
+      Level shown in the unit name banner ("Ember Knight Lv3").
+      TODO: level-up VFX banner mid-battle, hero roster UI showing
+      level + XP bar, tier/star multipliers (after ascension Phase 5).
 
 ## After progression
 

@@ -71,6 +71,44 @@ func set_party_ids(ids: PackedStringArray) -> void:
 	save_to_disk()
 
 
+# ─── Hero progression ────────────────────────────────────────────────
+
+## Returns {"xp": int, "level": int} for the given hero. If the hero
+## has never gained XP, returns defaults {xp:0, level:1}.
+func get_hero_progress(hero_id: String) -> Dictionary:
+	var bag: Dictionary = _state.get("hero_levels", {})
+	var prog: Dictionary = bag.get(hero_id, {})
+	return {
+		"xp": int(prog.get("xp", 0)),
+		"level": int(prog.get("level", 1)),
+	}
+
+
+## Add XP to a hero, recompute their level via Leveling, persist, and
+## return the result {"old_level", "new_level", "xp_gained",
+## "total_xp", "leveled_up"} so callers can show feedback (popup,
+## sound, banner) without re-deriving the math.
+func add_hero_xp(hero_id: String, xp_delta: int) -> Dictionary:
+	var bag: Dictionary = _state.get("hero_levels", {})
+	var prog: Dictionary = bag.get(hero_id, {"xp": 0, "level": 1})
+	var old_xp: int = int(prog.get("xp", 0))
+	var old_level: int = int(prog.get("level", 1))
+	var new_xp: int = old_xp + xp_delta
+	var new_level: int = Leveling.level_from_total_xp(new_xp)
+	prog["xp"] = new_xp
+	prog["level"] = new_level
+	bag[hero_id] = prog
+	_state["hero_levels"] = bag
+	save_to_disk()
+	return {
+		"old_level": old_level,
+		"new_level": new_level,
+		"xp_gained": xp_delta,
+		"total_xp": new_xp,
+		"leveled_up": new_level > old_level,
+	}
+
+
 # ─── Currency ────────────────────────────────────────────────────────
 
 func get_currency(name: String) -> int:
@@ -135,6 +173,7 @@ func _default_state() -> Dictionary:
 		"player": {"name": "Player", "level": 1, "xp": 0},
 		"currencies": {"gold": 0, "gems": 100, "stamina": 60},
 		"selected_party_ids": ["ember_knight", "crimson_lancer", "cinder_squire"],
+		"hero_levels": {},   # { hero_id: {xp: int, level: int} } — per-hero progression
 		"heroes": [],
 		"weapons": [],
 		"gear_inventory": [],

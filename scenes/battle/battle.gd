@@ -136,6 +136,7 @@ var _battle_id: String = ""
 var _heroes_data: Array[HeroData] = []
 var _heroes_stats: Array[Dictionary] = []
 var _heroes_hp: Array[int] = []
+var _heroes_levels: Array[int] = []     # cached at bind for XP grant on victory
 var _atb_heroes: Array[float] = []
 
 var _enemy_template: EnemyData
@@ -171,14 +172,19 @@ func _ready() -> void:
 		var hero_data: HeroData = ContentRegistry.get_hero(hero_id)
 		if hero_data == null:
 			_fail_setup("missing hero: " + hero_id); return
+		# Pull persisted level from SaveManager — first-time heroes
+		# default to lvl 1. Stats are scaled per Leveling.stat_at_level.
+		var hero_progress: Dictionary = SaveManager.get_hero_progress(hero_id)
+		var hero_level: int = int(hero_progress.get("level", 1))
 		_heroes_data.append(hero_data)
-		var stats := _hero_to_stats(hero_data)
+		_heroes_levels.append(hero_level)
+		var stats := _hero_to_stats(hero_data, hero_level)
 		_heroes_stats.append(stats)
 		_heroes_hp.append(int(stats.hp))
 		_atb_heroes.append(0.0)
 		var unit: Node2D = _hero_units[i]
 		unit.bind(
-			hero_data.display_name,
+			"%s Lv%d" % [hero_data.display_name, hero_level],
 			hero_data.sprite_color,
 			_heroes_hp[i],
 			hero_data.idle_frames,
@@ -257,11 +263,22 @@ func _register_turn_order_units() -> void:
 		_turn_order_bar.register_unit(_enemy_id(i), ENEMY_TINTS[i % ENEMY_TINTS.size()], _enemy_template.display_name)
 
 
-func _hero_to_stats(h: HeroData) -> Dictionary:
+## Build a hero's effective stats at a given level. Integer stats
+## (hp/atk/def/spd) get Leveling.stat_at_level; rate stats (crit_rate,
+## crit_dmg, acc, eva, res) get the float variant. Element and luk
+## passthrough unchanged.
+func _hero_to_stats(h: HeroData, level: int = 1) -> Dictionary:
 	return {
-		"hp": h.base_hp, "atk": h.base_atk, "def": h.base_def, "spd": h.base_spd,
-		"crit_rate": h.base_crit_rate, "crit_dmg": h.base_crit_dmg,
-		"acc": h.base_acc, "eva": h.base_eva, "luk": h.base_luk, "res": h.base_res,
+		"hp": Leveling.stat_at_level(h.base_hp, level),
+		"atk": Leveling.stat_at_level(h.base_atk, level),
+		"def": Leveling.stat_at_level(h.base_def, level),
+		"spd": Leveling.stat_at_level(h.base_spd, level),
+		"crit_rate": Leveling.float_stat_at_level(h.base_crit_rate, level),
+		"crit_dmg": Leveling.float_stat_at_level(h.base_crit_dmg, level),
+		"acc": Leveling.float_stat_at_level(h.base_acc, level),
+		"eva": Leveling.float_stat_at_level(h.base_eva, level),
+		"luk": h.base_luk,
+		"res": Leveling.float_stat_at_level(h.base_res, level),
 		"element": h.element,
 	}
 
@@ -874,7 +891,47 @@ func _end_battle(victory: bool) -> void:
 	)
 	_end_panel.show()
 	EventBus.combat_ended.emit(_battle_id, victory)
+	if victory:
+		_award_battle_xp()
 	print("[Battle] ended — ", "VICTORY" if victory else "DEFEAT")
+
+
+## Distribute battle XP at the end of a victory. Pool = base + (kills *
+## per_kill); split equally among heroes alive at the final bell. Dead
+## heroes get 0 — losing party members costs you progress, which feeds
+## into eventual difficulty tuning (heal items, revives, etc.).
+##
+## Each grant persists via SaveManager.add_hero_xp, which recomputes
+## the hero's level and writes the new entry to disk.
+const XP_VICTORY_BASE := 80
+const XP_PER_KILL := 25
+
+func _award_battle_xp() -> void:
+	var kills := 0
+	for hp in _enemies_hp:
+		if hp <= 0: kills += 1
+	var pool: int = XP_VICTORY_BASE + kills * XP_PER_KILL
+
+	var alive_idxs: Array[int] = []
+	for i in HERO_COUNT:
+		if _heroes_hp[i] > 0:
+			alive_idxs.append(i)
+	if alive_idxs.is_empty():
+		return  # shouldn't happen — battle would be a defeat — but guard anyway.
+
+	var per_hero: int = int(pool / alive_idxs.size())
+	for i in alive_idxs:
+		var hero_id: String = _heroes_data[i].id
+		var result: Dictionary = SaveManager.add_hero_xp(hero_id, per_hero)
+		if result.leveled_up:
+			print("[Battle] %s LEVELED UP %d -> %d (+%d XP, total %d)" % [
+				hero_id, result.old_level, result.new_level,
+				result.xp_gained, result.total_xp,
+			])
+		else:
+			print("[Battle] %s +%d XP (Lv%d, total %d)" % [
+				hero_id, result.xp_gained, result.new_level, result.total_xp,
+			])
 
 
 # ─── VFX helpers ─────────────────────────────────────────────────────

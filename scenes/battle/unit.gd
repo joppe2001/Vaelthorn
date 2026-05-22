@@ -201,13 +201,20 @@ func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrame
 		_anim_sprite.visible = true
 		_anim_sprite.sprite_frames = idle_frames
 		_anim_sprite.scale = Vector2(sprite_scale, sprite_scale)
-		_anim_sprite.position = Vector2(0, sprite_y_offset)
 		if idle_frames.has_animation(&"idle"):
 			_anim_sprite.animation = &"idle"
 			_anim_sprite.play()
-		# Scan the actual character pixels in the first idle frame so
-		# anchors track the body (not the empty cell padding).
-		_measure_character_bounds(idle_frames, sprite_scale, sprite_y_offset)
+		# Auto-ground: scan the idle frame to find where the feet sit in
+		# the sprite, and choose a y_offset that puts those feet at y=0
+		# (the shadow line). Falls back to the hand-tuned offset if the
+		# image can't be read. This means new sprites just need a scale
+		# value — they ground themselves automatically.
+		var final_offset: float = _compute_grounded_y_offset(idle_frames, sprite_scale)
+		if is_nan(final_offset):
+			final_offset = sprite_y_offset
+		_anim_sprite.position = Vector2(0, final_offset)
+		# Now measure character bounds in unit-local using the final offset.
+		_measure_character_bounds(idle_frames, sprite_scale, final_offset)
 	else:
 		_using_anim_sprite = false
 		_sprite.visible = true
@@ -224,6 +231,47 @@ func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrame
 	_hp_bar.value = max_hp
 	_hp_label.text = "%d / %d" % [max_hp, max_hp]
 	_update_hp_color(max_hp, max_hp)
+
+
+## Find the y_offset that puts the character's feet at y=0 (shadow
+## line). Done by alpha-scanning the first idle frame — bounds.position.y
+## + bounds.size.y is the lowest opaque pixel (feet). To put those feet
+## at y=0:
+##
+##   feet_in_frame  = bounds.bottom (px from frame top)
+##   feet_below_ctr = feet_in_frame - frame_h/2
+##   needed_offset  = -feet_below_ctr * sprite_scale
+##
+## Returns NAN if the image can't be read; caller falls back to the
+## hand-tuned sprite_y_offset.
+func _compute_grounded_y_offset(frames: SpriteFrames, sprite_scale: float) -> float:
+	if not frames.has_animation(&"idle"):
+		return NAN
+	if frames.get_frame_count(&"idle") <= 0:
+		return NAN
+	var tex: Texture2D = frames.get_frame_texture(&"idle", 0)
+	if tex == null:
+		return NAN
+	var frame_image: Image
+	if tex is AtlasTexture:
+		var atlas_tex: AtlasTexture = tex
+		if atlas_tex.atlas == null:
+			return NAN
+		var atlas_image: Image = atlas_tex.atlas.get_image()
+		if atlas_image == null:
+			return NAN
+		frame_image = atlas_image.get_region(atlas_tex.region)
+	else:
+		frame_image = tex.get_image()
+	if frame_image == null:
+		return NAN
+	var bounds: Rect2i = frame_image.get_used_rect()
+	if bounds.size.y <= 0:
+		return NAN
+	var frame_h: float = float(frame_image.get_height())
+	var feet_in_frame: float = float(bounds.position.y + bounds.size.y)
+	var feet_below_center: float = feet_in_frame - frame_h * 0.5
+	return -feet_below_center * sprite_scale
 
 
 ## Scan the alpha channel of the first idle frame to find the actual

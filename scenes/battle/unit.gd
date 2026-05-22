@@ -441,7 +441,7 @@ func _ensure_burn_ambient() -> void:
 	# the midpoint). Reads as "the body is on fire" rather than putting
 	# the flame in front of the face. Works for any sprite size since
 	# it's relative to the measured character bounds.
-	_burn_ambient.position = Vector2(0, _char_top_y + _char_height * 0.60)
+	_burn_ambient.position = Vector2(0, _char_top_y + _char_height * 0.78)
 
 
 func _clear_burn_ambient() -> void:

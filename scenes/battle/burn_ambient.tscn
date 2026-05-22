@@ -33,5 +33,5 @@ script = ExtResource("0_script")
 [node name="Anim" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_burn")
 animation = &"burn"
-scale = Vector2(4, 4)
+scale = Vector2(3, 3)
 modulate = Color(1, 0.92, 0.78, 0.95)

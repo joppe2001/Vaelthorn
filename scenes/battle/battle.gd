@@ -14,6 +14,7 @@ const SLASH_SCENE := preload("res://scenes/battle/slash_effect.tscn")
 const HEAL_VFX_SCENE := preload("res://scenes/battle/heal_effect.tscn")
 const BUFF_VFX_SCENE := preload("res://scenes/battle/buff_effect.tscn")
 const DEBUFF_VFX_SCENE := preload("res://scenes/battle/debuff_effect.tscn")
+const ULT_CUTIN_SCENE := preload("res://scenes/battle/ult_cutin.tscn")
 const MAX_SKILL_SLOTS := 4
 
 # Fallback if Game.selected_party_ids is empty/malformed. Party Builder
@@ -470,13 +471,18 @@ func _on_ult_pressed() -> void:
 		push_error("[Battle] missing ultimate: " + hero_data.ultimate_id); return
 	_set_actions_enabled(false)
 	print("[Battle] %s -> ULTIMATE %s" % [_hero_id(_active_hero_idx), ult.id])
-	# Brief dramatic pulse on the caster before the swing
 	var hero_idx := _active_hero_idx
 	var caster := _hero_units[hero_idx]
+	# Cinematic cut-in: dim overlay + slanted accent + ult/caster banner.
+	# Awaits the cut-in's `done` signal so the actual swing only starts
+	# once the banner has cleared.
+	await _play_ult_cutin(ult.skill_name, hero_data.display_name, hero_data.sprite_color)
+	# Dramatic pulse on the caster just before the swing, so the ult
+	# moment lands with weight even after the cut-in.
 	var pre := create_tween()
-	pre.tween_property(caster, "scale", Vector2(1.18, 1.18), 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pre.tween_property(caster, "scale", Vector2(1.22, 1.22), 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	pre.tween_property(caster, "scale", Vector2(1.0, 1.0), 0.16)
-	await get_tree().create_timer(0.30).timeout
+	await get_tree().create_timer(0.22).timeout
 	await _hero_uses_skill(ult, hero_idx)
 	var cost: float = float(ult.atb_cost) if ult.atb_cost > 0 else DEFAULT_ATB_COST
 	_atb_heroes[hero_idx] = max(0.0, _atb_heroes[hero_idx] - cost)
@@ -841,6 +847,15 @@ func _spawn_heal_vfx(target_unit: Node2D) -> void:
 	var effect := HEAL_VFX_SCENE.instantiate()
 	_popup_layer.add_child(effect)
 	effect.global_position = target_unit.global_position + Vector2(0, -100)
+
+
+## Spawn the ultimate cut-in overlay, hand it the ult/caster names, and
+## await the `done` signal so the caller pauses until the banner clears.
+func _play_ult_cutin(ult_name: String, caster_name: String, accent_color: Color) -> void:
+	var cutin := ULT_CUTIN_SCENE.instantiate()
+	add_child(cutin)
+	cutin.play(ult_name, caster_name, accent_color)
+	await cutin.done
 
 
 func _shake_camera(amount: float, duration: float) -> void:

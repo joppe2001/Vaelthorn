@@ -67,9 +67,10 @@ path. Each item is small + visible.
       status applies.
 - [ ] **Burn ambient VFX** — small flame particles flickering above the
       burning unit each turn, on top of the orange B badge.
-- [ ] **Ultimate cut-in (the big one)** — when an ult is used: dim the
-      screen, zoom + scale the caster, hold for 300 ms, then resume.
-      Standard BF / Star Rail "ult moment."
+- [x] **Ultimate cut-in (the big one)** — shipped. Dim overlay + slanted
+      accent stripe + caster/ult banner that slides in, holds ~260ms,
+      then fades. Caster also gets a bigger pre-swing pulse after the
+      cut-in clears.
 - [ ] **Hurt impact flash** — brief white screen-wide flash when a hero
       takes a critical hit. Sells the "ow" beyond the red tint.
 - [ ] **Death effect** — small particle burst + brief screen darken when

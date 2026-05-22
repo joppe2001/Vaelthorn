@@ -62,10 +62,11 @@ path. Each item is small + visible.
 - [x] **Buff/Debuff VFX swapped to pixel art** — replaced the earlier
       code-driven gold ring + jagged spokes with Pimen sprite sheets:
       buff = shield rising, debuff = skull pierced by arrow.
-- [x] **Crit punch-up** — shipped. White flash overlay (CanvasLayer at
-      layer 60, 0.42 alpha) + Engine.time_scale = 0.4 for ~120ms wall
-      time + amplified camera shake (12→14, 0.22→0.24). Re-entrancy
-      guard prevents AoE multi-crits from leaving time_scale stuck.
+- [x] **Crit punch-up** — shipped. Engine.time_scale = 0.4 for ~120ms
+      wall time + amplified camera shake (12→14, 0.22→0.24).
+      Re-entrancy guard prevents AoE multi-crits from leaving
+      time_scale stuck. (Initial pass included a white screen flash;
+      removed by request — the slow-mo + shake combo is enough.)
 - [x] **Heal VFX** — shipped. Green expanding glow + 7 rising shimmer
       motes on the target when Mend (or any heal result) lands.
 - [x] **Buff VFX (Brace / Aegis)** — shipped. Two-pulse gold ring + 10
@@ -74,8 +75,14 @@ path. Each item is small + visible.
 - [x] **Debuff VFX (Shatter)** — shipped. Jagged dark cracked rings +
       6 spokes shooting outward when a negative-modifier / DoT / stun
       status applies.
-- [ ] **Burn ambient VFX** — small flame particles flickering above the
-      burning unit each turn, on top of the orange B badge.
+- [x] **Burn ambient VFX** — shipped. Looping 3-frame flame
+      (assets/sprites/vfx/elements/fire_burst.png frames 1-3) parented
+      to the unit so it follows through dashes. Spawned on add_status
+      ("burn"), freed on remove_status / death.
+- [x] **Death effect** — shipped. Code-driven soul particles (white/
+      grey Polygon2D squares) drift up and fade ~0.95s before the
+      lying-down sprite settles. Spawned on the unit's parent so the
+      particles outlive the dying unit's fade.
 - [x] **Ultimate cut-in (the big one)** — shipped. Dim overlay + slanted
       accent stripe + caster/ult banner that slides in, holds ~260ms,
       then fades. Caster also gets a bigger pre-swing pulse after the

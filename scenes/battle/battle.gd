@@ -990,36 +990,14 @@ func _play_ult_cutin(ult_name: String, caster_name: String, accent_color: Color)
 	await cutin.done
 
 
-## Crit punch-up — short white screen flash + brief Engine.time_scale
-## dip so a critical hit visibly "stops the world" for a beat. Bigger
-## camera shake already fires alongside this from the call site.
+## Crit punch-up — brief Engine.time_scale dip so a critical hit
+## visibly "stops the world" for a beat. Bigger camera shake fires
+## alongside this from the call site.
 ##
-## The slow-mo window is gated by _crit_slowmo_active so back-to-back
-## crits (Pyre Breaker AoE on three goblins, all crit) don't double-set
-## time_scale and leave it stuck.
+## Gated by _crit_slowmo_active so back-to-back crits (Pyre Breaker AoE
+## on three goblins, all crit) don't double-set time_scale and leave
+## it stuck.
 func _crit_punch() -> void:
-	_crit_flash()
-	_crit_time_slow()
-
-
-func _crit_flash() -> void:
-	# Tiny one-shot CanvasLayer with a white ColorRect that fades out.
-	# Self-frees after the fade.
-	var layer := CanvasLayer.new()
-	layer.layer = 60
-	var rect := ColorRect.new()
-	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	rect.color = Color(1, 1, 1, 0.42)
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layer.add_child(rect)
-	add_child(layer)
-	var tween := create_tween()
-	tween.tween_property(rect, "modulate:a", 0.0, 0.18) \
-		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	tween.tween_callback(layer.queue_free)
-
-
-func _crit_time_slow() -> void:
 	if _crit_slowmo_active:
 		return
 	_crit_slowmo_active = true

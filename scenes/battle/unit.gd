@@ -12,6 +12,8 @@ extends Node2D
 signal clicked(unit: Node2D)
 
 const STATUS_ICON_SCENE := preload("res://scenes/battle/status_icon.tscn")
+const BURN_AMBIENT_SCENE := preload("res://scenes/battle/burn_ambient.tscn")
+const DEATH_EFFECT_SCENE := preload("res://scenes/battle/death_effect.tscn")
 
 @onready var _sprite_holder: Node2D = $SpriteHolder
 @onready var _sprite: Polygon2D = $SpriteHolder/Sprite
@@ -36,6 +38,10 @@ var _using_anim_sprite: bool = false
 var _icons_by_status: Dictionary = {}
 var _is_dead: bool = false
 var _is_selected: bool = false
+
+# Live burn ambient sprite while this unit has the burn status. Kept as
+# a child so it follows the unit through dashes and position bumps.
+var _burn_ambient: Node2D = null
 
 var statuses: StatusManager = StatusManager.new()
 var _ultimate_value: float = 0.0
@@ -364,6 +370,9 @@ func set_dead(is_dead: bool) -> void:
 		# Statuses don't persist past death — a corpse can't be burning
 		# or stunned. Clear the StatusManager and tear down the badges.
 		_clear_all_statuses()
+		# Soul particles drifting up before the lying-down sprite
+		# settles. Spawned on the parent so they outlive this unit.
+		_spawn_death_effect()
 		# Play the lying-down dead frame if the unit has one (heroes do, slimes don't)
 		if _using_anim_sprite and _anim_sprite != null and _anim_sprite.sprite_frames != null and _anim_sprite.sprite_frames.has_animation(&"dead"):
 			_anim_sprite.play(&"dead")
@@ -383,6 +392,18 @@ func _clear_all_statuses() -> void:
 	for sid in _icons_by_status.keys():
 		_icons_by_status[sid].queue_free()
 	_icons_by_status.clear()
+	# Burn ambient is a separate visual; clear it explicitly so a
+	# burning unit's flame goes out when they die.
+	_clear_burn_ambient()
+
+
+## Soul-particles burst before the lying-down sprite settles. Spawned
+## as a sibling (on the parent) so it survives even after the unit's
+## sprite fades — the particles drift up independently for ~0.9s.
+func _spawn_death_effect() -> void:
+	var fx := DEATH_EFFECT_SCENE.instantiate()
+	get_parent().add_child(fx)
+	fx.global_position = get_anchor(&"center")
 
 
 func _on_click_area_input(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
@@ -397,11 +418,34 @@ func _on_click_area_input(_viewport: Node, event: InputEvent, _shape_idx: int) -
 func add_status(status_id: String, duration: int, power: float, data: StatusEffectData) -> void:
 	statuses.add(status_id, duration, power, data)
 	_refresh_status_icons()
+	if status_id == "burn":
+		_ensure_burn_ambient()
 
 
 func remove_status(status_id: String) -> void:
 	statuses.remove(status_id)
 	_refresh_status_icons()
+	if status_id == "burn":
+		_clear_burn_ambient()
+
+
+## Spawn the looping flame as a child of this unit (so it follows the
+## body through dashes). No-op if one is already present — burn can be
+## refreshed on a unit that's already burning.
+func _ensure_burn_ambient() -> void:
+	if _burn_ambient != null and is_instance_valid(_burn_ambient):
+		return
+	_burn_ambient = BURN_AMBIENT_SCENE.instantiate()
+	add_child(_burn_ambient)
+	# Sit at head height (anchor is computed from the measured sprite
+	# bounds, so this works for heroes and goblins alike).
+	_burn_ambient.position = Vector2(0, _char_top_y - 8.0)
+
+
+func _clear_burn_ambient() -> void:
+	if _burn_ambient != null and is_instance_valid(_burn_ambient):
+		_burn_ambient.queue_free()
+	_burn_ambient = null
 
 
 func refresh_status_durations() -> void:

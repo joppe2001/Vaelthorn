@@ -41,6 +41,41 @@ short and prune as items ship; don't let it bloat into a wishlist.
 - [ ] More enemies (after 4e validates the enemy-sprite pipeline).
 - [ ] Telemetry / crash reporter wiring.
 
+### VFX expansion (a series of small 10–30 min upgrades)
+
+The current battle has: a single slash variant, red flash on hit, screen
+shake, scale punch, position bump, color-coded damage popups (gold crit,
+green lucky), and a fade on death. The list below is the natural growth
+path. Each item is small + visible.
+
+- [ ] **Per-skill slash variants** — Flame Slash uses Mana Seed's Slash
+      2 (different arc shape), Shatter uses Thrust (jab effect), basic
+      Strike keeps Slash 1. The pack ships all four.
+- [ ] **Element-tinted slashes** — slash modulate matches the skill's
+      element. Fire = orange, Water = cyan, etc. Same texture, different
+      tint per cast.
+- [ ] **Crit punch-up** — short screen flash + brief time-slow (Engine.
+      time_scale = 0.5 for ~150 ms) + extra slash overlay. Crits should
+      stop you cold for a beat.
+- [ ] **Heal VFX** — green particle puff or upward shimmer when Mend
+      lands. Right now you just see the `+amount` popup.
+- [ ] **Buff VFX (Brace / Aegis)** — gold sparkle ring rising around the
+      caster on apply. Status badge already exists; this is the moment-
+      of-application flair.
+- [ ] **Debuff VFX (Shatter)** — dark crack ripple on the target when
+      DEF_DOWN lands. Complement the pink "-" status icon.
+- [ ] **Burn ambient VFX** — small flame particles flickering above the
+      burning unit each turn, on top of the orange B badge.
+- [ ] **Ultimate cut-in (the big one)** — when an ult is used: dim the
+      screen, zoom + scale the caster, hold for 300 ms, then resume.
+      Standard BF / Star Rail "ult moment."
+- [ ] **Hurt impact flash** — brief white screen-wide flash when a hero
+      takes a critical hit. Sells the "ow" beyond the red tint.
+- [ ] **Death effect** — small particle burst + brief screen darken when
+      a unit dies, before the lying-down sprite settles.
+- [ ] **Status icon pulse animations** — B icon pulses orange, - icon
+      flickers magenta, etc. (Phase 5 polish.)
+
 ## Engineering hygiene
 
 - [ ] Pre-commit hooks (gdformat, gdlint, content validation) — promised

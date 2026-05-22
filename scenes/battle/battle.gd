@@ -70,6 +70,21 @@ const SKILL_TO_BODY_ANIM := {
 	"mend":           &"cast",
 }
 
+# Per-element slash tint. Indices match the HeroData / SkillData element
+# enum: FIRE=0, WATER=1, EARTH=2, WIND=3, LIGHT=4, DARK=5. The slash
+# sprite ships near-white, so these modulate colors paint the arc.
+const ELEMENT_TINT := [
+	Color(1.00, 0.55, 0.35, 1.0),  # FIRE  — orange-red
+	Color(0.50, 0.85, 1.00, 1.0),  # WATER — cyan
+	Color(0.95, 0.78, 0.45, 1.0),  # EARTH — amber-tan
+	Color(0.65, 1.00, 0.75, 1.0),  # WIND  — pale green
+	Color(1.00, 0.95, 0.55, 1.0),  # LIGHT — bright yellow
+	Color(0.85, 0.55, 1.00, 1.0),  # DARK  — purple
+]
+# Fallback for unresolved / neutral slashes (matches the slash scene's
+# original modulate so non-elemental swings look unchanged).
+const SLASH_TINT_NEUTRAL := Color(1.0, 1.0, 0.85, 1.0)
+
 # Slight color shifts so identical-data slimes are visually distinct.
 const ENEMY_TINTS := [
 	Color(0.45, 0.85, 0.55, 1),
@@ -621,15 +636,34 @@ func _make_enemy_skill(idx: int) -> SkillData:
 
 func _resolve_skill(skill: SkillData, attacker_stats: Dictionary, target_stats: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int, target_is_hero: bool) -> void:
 	var slash_variant: StringName = SKILL_TO_SLASH.get(skill.id, &"slash1")
+	# Resolve the slash tint once per skill cast: skill.element wins
+	# (>= 0), else inherit from the attacker, else fall back to the
+	# neutral cream color.
+	var slash_tint: Color = _resolve_slash_tint(skill, attacker_stats)
 	for effect in skill.effects:
 		var ctx := EffectContext.new(attacker_stats, target_stats, attacker_id, target_id, skill, _rng)
 		var result: Dictionary = effect.apply(ctx)
-		_apply_result(result, attacker_id, target_id, target_unit, target_idx, target_is_hero, slash_variant)
+		_apply_result(result, attacker_id, target_id, target_unit, target_idx, target_is_hero, slash_variant, slash_tint)
 		if result.get("kind") == "miss":
 			break
 
 
-func _apply_result(result: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int, target_is_hero: bool, slash_variant: StringName = &"slash1") -> void:
+## Pick the slash modulate color for a single skill cast.
+##   1. skill.element >= 0 — explicit override on the skill itself
+##   2. attacker_stats.element — caster's element when the skill inherits
+##   3. neutral cream — final fallback (basic attacks, enemy slams)
+func _resolve_slash_tint(skill: SkillData, attacker_stats: Dictionary) -> Color:
+	var element: int = -1
+	if skill.element >= 0:
+		element = skill.element
+	elif attacker_stats.has("element"):
+		element = int(attacker_stats["element"])
+	if element >= 0 and element < ELEMENT_TINT.size():
+		return ELEMENT_TINT[element]
+	return SLASH_TINT_NEUTRAL
+
+
+func _apply_result(result: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int, target_is_hero: bool, slash_variant: StringName = &"slash1", slash_tint: Color = Color(1.0, 1.0, 0.85, 1.0)) -> void:
 	match result.get("kind", "none"):
 		"damage":
 			var amount: int = int(result.damage)
@@ -663,7 +697,7 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 			if slash_variant != &"":
 				# Anchor the slash at the target's center, with a small
 				# horizontal nudge in the direction the sword came from.
-				_spawn_slash(target_unit.get_anchor(&"center") + Vector2(slash_x, 0), flipped, slash_variant)
+				_spawn_slash(target_unit.get_anchor(&"center") + Vector2(slash_x, 0), flipped, slash_variant, slash_tint)
 			if result.is_crit:
 				_shake_camera(12.0, 0.22)
 			else:
@@ -821,11 +855,12 @@ func _lunge(unit: Node2D, toward: Vector2) -> void:
 	tween.tween_property(unit, "position", origin, LUNGE_BACK).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 
 
-func _spawn_slash(at: Vector2, flipped: bool, variant: StringName = &"slash1") -> void:
+func _spawn_slash(at: Vector2, flipped: bool, variant: StringName = &"slash1", tint: Color = SLASH_TINT_NEUTRAL) -> void:
 	var effect := SLASH_SCENE.instantiate()
 	_popup_layer.add_child(effect)
 	effect.global_position = at
 	effect.set_flipped(flipped)
+	effect.set_tint(tint)
 	effect.play_variant(variant)
 
 

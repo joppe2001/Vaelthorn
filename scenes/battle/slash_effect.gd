@@ -33,6 +33,13 @@ func set_flipped(flipped: bool) -> void:
 	_anim.flip_h = flipped
 
 
+## Element tint applied as a modulate. Slash sprite ships near-white, so
+## multiplying tints the whole arc to the element's color. Alpha stays
+## 1.0 — the script handles fade-out at end of animation.
+func set_tint(color: Color) -> void:
+	_anim.modulate = color
+
+
 ## Pick which slash variant to play. Falls back to slash1 if the requested
 ## animation doesn't exist.
 func play_variant(anim_name: StringName) -> void:

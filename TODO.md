@@ -51,9 +51,10 @@ path. Each item is small + visible.
 - [ ] **Per-skill slash variants** — Flame Slash uses Mana Seed's Slash
       2 (different arc shape), Shatter uses Thrust (jab effect), basic
       Strike keeps Slash 1. The pack ships all four.
-- [ ] **Element-tinted slashes** — slash modulate matches the skill's
-      element. Fire = orange, Water = cyan, etc. Same texture, different
-      tint per cast.
+- [x] **Element-tinted slashes** — shipped. Slash modulate driven by
+      ELEMENT_TINT[skill.element], with attacker.element as the inherit
+      fallback. FIRE=orange-red, WATER=cyan, EARTH=amber, WIND=pale
+      green, LIGHT=yellow, DARK=purple.
 - [ ] **Crit punch-up** — short screen flash + brief time-slow (Engine.
       time_scale = 0.5 for ~150 ms) + extra slash overlay. Crits should
       stop you cold for a beat.

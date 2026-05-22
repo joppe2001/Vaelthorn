@@ -35,6 +35,10 @@ class_name HeroData extends Resource
 @export_group("Visuals")
 ## Fallback color tint when no SpriteFrames are set (placeholder Polygon2D).
 @export var sprite_color: Color = Color(0.97, 0.78, 0.31, 1.0)
+## Static front-facing portrait — used in roster cards, party builder, hero
+## detail. Typically a 256x256 PNG cropped from the front idle pose (row 1
+## col 1 of the Mana Seed sheet). Null = fallback to sprite_color rect.
+@export var portrait: Texture2D = null
 ## When set, the Unit shows an AnimatedSprite2D using these frames instead of
 ## the Polygon2D placeholder. Leave null for entities without art yet.
 @export var idle_frames: SpriteFrames = null

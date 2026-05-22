@@ -91,12 +91,7 @@ func _make_slot_card(slot_idx: int, hero_id: String) -> Control:
 	else:
 		var hero: HeroData = ContentRegistry.get_hero(hero_id)
 		if hero != null:
-			var box := ColorRect.new()
-			box.custom_minimum_size = Vector2(110, 140)
-			box.color = hero.sprite_color
-			box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			v.add_child(box)
+			v.add_child(_make_portrait_view(hero, Vector2(140, 140)))
 			var name_label := Label.new()
 			name_label.text = hero.display_name
 			name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -118,6 +113,26 @@ func _make_slot_card(slot_idx: int, hero_id: String) -> Control:
 		)
 		card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	return card
+
+
+## Portrait helper — returns TextureRect when the hero has art, ColorRect
+## fallback otherwise. mouse_filter=IGNORE so clicks bubble to the card.
+func _make_portrait_view(hero: HeroData, size: Vector2) -> Control:
+	if hero.portrait != null:
+		var tex := TextureRect.new()
+		tex.texture = hero.portrait
+		tex.custom_minimum_size = size
+		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return tex
+	var rect := ColorRect.new()
+	rect.custom_minimum_size = size
+	rect.color = hero.sprite_color
+	rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rect
 
 
 func _refresh_pool() -> void:
@@ -157,12 +172,7 @@ func _make_pool_card(hero: HeroData) -> Control:
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(v)
 
-	var box := ColorRect.new()
-	box.custom_minimum_size = Vector2(90, 110)
-	box.color = hero.sprite_color
-	box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(box)
+	v.add_child(_make_portrait_view(hero, Vector2(120, 120)))
 
 	var name_label := Label.new()
 	name_label.text = hero.display_name

@@ -49,10 +49,11 @@ offset_right = -32.0
 offset_bottom = -120.0
 theme_override_constants/separation = 28
 
-[node name="Portrait" type="ColorRect" parent="Layout"]
+[node name="Portrait" type="TextureRect" parent="Layout"]
 custom_minimum_size = Vector2(280, 360)
 layout_mode = 2
-color = Color(0.976, 0.78, 0.31, 1)
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Right" type="VBoxContainer" parent="Layout"]
 layout_mode = 2

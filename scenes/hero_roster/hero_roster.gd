@@ -68,13 +68,7 @@ func _make_card(hero: HeroData) -> Control:
 	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(v)
 
-	# Sprite color preview (a ColorRect — placeholder; real portraits in Phase 3+)
-	var sprite_box := ColorRect.new()
-	sprite_box.custom_minimum_size = Vector2(120, 160)
-	sprite_box.color = hero.sprite_color
-	sprite_box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	sprite_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(sprite_box)
+	v.add_child(_make_portrait_view(hero, Vector2(160, 160)))
 
 	# Name
 	var name_label := Label.new()
@@ -111,6 +105,26 @@ func _make_card(hero: HeroData) -> Control:
 	)
 	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	return card
+
+
+## Returns a TextureRect with the hero's portrait, or a colored fallback rect
+## when no portrait is set yet. Either way, click events pass through.
+func _make_portrait_view(hero: HeroData, size: Vector2) -> Control:
+	if hero.portrait != null:
+		var tex := TextureRect.new()
+		tex.texture = hero.portrait
+		tex.custom_minimum_size = size
+		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tex.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return tex
+	var rect := ColorRect.new()
+	rect.custom_minimum_size = size
+	rect.color = hero.sprite_color
+	rect.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rect
 
 
 func _make_chip(text: String, color: Color) -> Control:

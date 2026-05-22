@@ -16,7 +16,7 @@ const ELEMENT_COLORS := [
 ]
 
 @onready var _heading: Label = $TopBar/Heading
-@onready var _portrait: ColorRect = $Layout/Portrait
+@onready var _portrait: Control = $Layout/Portrait
 @onready var _sub_label: Label = $Layout/Right/SubLabel
 @onready var _stats_grid: GridContainer = $Layout/Right/StatsGrid
 @onready var _skills_vbox: VBoxContainer = $Layout/Right/SkillsScroll/SkillsVBox
@@ -34,7 +34,11 @@ func _ready() -> void:
 
 func _populate(hero: HeroData) -> void:
 	_heading.text = hero.display_name
-	_portrait.color = hero.sprite_color
+	# Portrait node may be TextureRect (current) or ColorRect (legacy fallback).
+	if _portrait is TextureRect:
+		(_portrait as TextureRect).texture = hero.portrait
+	elif _portrait is ColorRect:
+		(_portrait as ColorRect).color = hero.sprite_color
 
 	var elem_name: String = ELEMENT_NAMES[hero.element] if hero.element >= 0 and hero.element < ELEMENT_NAMES.size() else "?"
 	var class_name_str: String = CLASS_NAMES[hero.class_type] if hero.class_type >= 0 and hero.class_type < CLASS_NAMES.size() else "?"

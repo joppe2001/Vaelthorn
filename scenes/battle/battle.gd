@@ -29,13 +29,14 @@ const TEST_ENEMY_ID := "training_slime"
 # attacker and target sprites don't overlap, small enough that the slash
 # arc + impact reads as a proper engagement.
 const APPROACH_GAP := 110.0
-# Maximum dash distance — never go further than this even if the target
-# is across the screen. Keeps super-long dashes from looking teleporty.
-const APPROACH_DASH_MAX := 520.0
-# Tuned to Mana Seed's recommended attack timing (160/65/65/200ms): the
-# attacker arrives at the target right as the slash impact frame plays.
-const LUNGE_OUT := 0.30
-const LUNGE_BACK := 0.30
+# Dash duration scales with distance so near and far attacks feel the
+# same visual speed instead of capping out / teleporting. Clamped so
+# short hops still take a beat and cross-screen dashes don't drag.
+const DASH_SPEED := 2200.0
+const DASH_DUR_MIN := 0.18
+const DASH_DUR_MAX := 0.40
+# Used for the post-impact pause before the attacker dashes back.
+const LUNGE_RETURN_PAUSE := 0.30
 const DEFAULT_ATB_COST := 100.0
 
 # Per-skill slash VFX variant. Maps a skill id to one of the animations
@@ -550,13 +551,13 @@ func _resolve_skill_enemy_single(skill: SkillData, hero_idx: int, target_idx: in
 	var target_unit: Node2D = _enemy_units[target_idx]
 	var body_anim: StringName = SKILL_TO_BODY_ANIM.get(skill.id, &"attack")
 	hero_unit.play_attack(body_anim)
-	_lunge(hero_unit, target_unit.global_position)
-	await get_tree().create_timer(LUNGE_OUT).timeout
+	var dash_dur: float = _lunge(hero_unit, target_unit.global_position)
+	await get_tree().create_timer(dash_dur).timeout
 	var attacker_eff := _effective_stats(hero_stats, hero_unit.statuses)
 	var target_eff := _effective_stats(_enemies_stats[target_idx], target_unit.statuses)
 	await _resolve_skill(skill, attacker_eff, target_eff,
 		_hero_id(hero_idx), _enemy_id(target_idx), target_unit, target_idx, false)
-	await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
+	await get_tree().create_timer(dash_dur + LUNGE_RETURN_PAUSE).timeout
 
 
 func _resolve_skill_enemy_all(skill: SkillData, hero_idx: int) -> void:
@@ -575,8 +576,8 @@ func _resolve_skill_enemy_all(skill: SkillData, hero_idx: int) -> void:
 	centroid /= alive_idxs.size()
 	var body_anim: StringName = SKILL_TO_BODY_ANIM.get(skill.id, &"attack")
 	hero_unit.play_attack(body_anim)
-	_lunge(hero_unit, centroid)
-	await get_tree().create_timer(LUNGE_OUT).timeout
+	var dash_dur: float = _lunge(hero_unit, centroid)
+	await get_tree().create_timer(dash_dur).timeout
 
 	# Resolve effects on each alive enemy
 	var attacker_eff := _effective_stats(hero_stats, hero_unit.statuses)
@@ -585,7 +586,7 @@ func _resolve_skill_enemy_all(skill: SkillData, hero_idx: int) -> void:
 		var target_eff := _effective_stats(_enemies_stats[i], target_unit.statuses)
 		await _resolve_skill(skill, attacker_eff, target_eff,
 			_hero_id(hero_idx), _enemy_id(i), target_unit, i, false)
-	await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
+	await get_tree().create_timer(dash_dur + LUNGE_RETURN_PAUSE).timeout
 
 
 # ─── Enemy turn ──────────────────────────────────────────────────────
@@ -608,14 +609,14 @@ func _do_enemy_turn(idx: int) -> void:
 		var target_hero: Node2D = _hero_units[target_hero_idx]
 
 		var enemy_skill := _make_enemy_skill(idx)
-		_lunge(enemy_unit, target_hero.global_position)
-		await get_tree().create_timer(LUNGE_OUT).timeout
+		var dash_dur: float = _lunge(enemy_unit, target_hero.global_position)
+		await get_tree().create_timer(dash_dur).timeout
 
 		var attacker_eff := _effective_stats(enemy_stats, enemy_unit.statuses)
 		var target_eff := _effective_stats(_heroes_stats[target_hero_idx], target_hero.statuses)
 		await _resolve_skill(enemy_skill, attacker_eff, target_eff,
 			_enemy_id(idx), _hero_id(target_hero_idx), target_hero, target_hero_idx, true)
-		await get_tree().create_timer(LUNGE_BACK + 0.30).timeout
+		await get_tree().create_timer(dash_dur + LUNGE_RETURN_PAUSE).timeout
 
 	_atb_enemies[idx] = max(0.0, _atb_enemies[idx] - DEFAULT_ATB_COST)
 	_refresh_turn_order_bar()
@@ -854,26 +855,29 @@ func _end_battle(victory: bool) -> void:
 
 ## Dash the unit toward a target position, stopping APPROACH_GAP pixels
 ## short so attacker and target sprites don't overlap. Then return to
-## the origin. Distance is capped at APPROACH_DASH_MAX so cross-screen
-## dashes don't read as a teleport.
+## the origin.
 ##
-## Timing stays fixed (LUNGE_OUT / LUNGE_BACK) so the attack body anim,
-## slash arc, and damage popup all land at the impact moment regardless
-## of how far the unit had to travel.
-func _lunge(unit: Node2D, toward: Vector2) -> void:
+## Duration scales with distance via DASH_SPEED (clamped to DASH_DUR_MIN
+## / DASH_DUR_MAX) — so near and far targets feel like the same dash,
+## just with the right travel time.
+##
+## Returns the forward-dash duration so callers can sync the slash arc
+## and damage popup to land at the impact moment regardless of distance.
+func _lunge(unit: Node2D, toward: Vector2) -> float:
 	var origin := unit.position
 	var to_target: Vector2 = toward - unit.global_position
 	var dir: Vector2 = to_target.normalized()
-	# Stop short of the target. If the gap math goes negative (already
-	# closer than the gap), just don't move.
+	# Stop short of the target. Negative gap math means we're already
+	# closer than the gap — just don't move.
 	var travel: float = max(0.0, to_target.length() - APPROACH_GAP)
-	travel = min(travel, APPROACH_DASH_MAX)
+	var dur: float = clamp(travel / DASH_SPEED, DASH_DUR_MIN, DASH_DUR_MAX)
 	var target: Vector2 = origin + dir * travel
 	var tween := create_tween()
-	tween.tween_property(unit, "position", target, LUNGE_OUT) \
+	tween.tween_property(unit, "position", target, dur) \
 		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	tween.tween_property(unit, "position", origin, LUNGE_BACK) \
+	tween.tween_property(unit, "position", origin, dur) \
 		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
+	return dur
 
 
 func _spawn_slash(at: Vector2, flipped: bool, variant: StringName = &"slash1", tint: Color = SLASH_TINT_NEUTRAL) -> void:

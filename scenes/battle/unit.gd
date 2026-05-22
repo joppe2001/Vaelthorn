@@ -231,6 +231,18 @@ func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrame
 	_hp_bar.value = max_hp
 	_hp_label.text = "%d / %d" % [max_hp, max_hp]
 	_update_hp_color(max_hp, max_hp)
+	# Default facing is the sprite's native orientation (right for our
+	# Mana Seed heroes). Battle.gd flips enemies after bind so they
+	# face the heroes across the battle line.
+
+
+## Mirror the sprite horizontally. Sprites in this project are authored
+## east-facing (heroes look right by default); call set_flipped(true)
+## on enemies so they face the heroes. No-op for placeholder Polygon2D
+## units.
+func set_flipped(flipped: bool) -> void:
+	if _using_anim_sprite and _anim_sprite != null:
+		_anim_sprite.flip_h = flipped
 
 
 ## Find the y_offset that puts the character's feet at y=0 (shadow

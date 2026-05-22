@@ -212,6 +212,9 @@ func _ready() -> void:
 			_enemy_template.sprite_y_offset,
 		)
 		unit.set_ultimate_visible(false)  # enemies don't have ultimates
+		# Enemies face left so they look across the battle line at the
+		# heroes (sprites are authored east-facing by default).
+		unit.set_flipped(true)
 		var captured_idx := i
 		unit.clicked.connect(func(_u: Node2D): _on_enemy_clicked(captured_idx))
 		unit.set_targetable(true)

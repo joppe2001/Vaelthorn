@@ -67,6 +67,7 @@ func _make_slot_card(slot_idx: int, hero_id: String) -> Control:
 	var v := VBoxContainer.new()
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_theme_constant_override("separation", 8)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(v)
 
 	var slot_label := Label.new()
@@ -74,6 +75,7 @@ func _make_slot_card(slot_idx: int, hero_id: String) -> Control:
 	slot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	slot_label.add_theme_font_size_override("font_size", 11)
 	slot_label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.78, 1))
+	slot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(slot_label)
 
 	if hero_id == "":
@@ -84,6 +86,7 @@ func _make_slot_card(slot_idx: int, hero_id: String) -> Control:
 		empty_label.add_theme_color_override("font_color", Color(0.5, 0.55, 0.62, 1))
 		empty_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		empty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		v.add_child(empty_label)
 	else:
 		var hero: HeroData = ContentRegistry.get_hero(hero_id)
@@ -92,18 +95,21 @@ func _make_slot_card(slot_idx: int, hero_id: String) -> Control:
 			box.custom_minimum_size = Vector2(110, 140)
 			box.color = hero.sprite_color
 			box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			v.add_child(box)
 			var name_label := Label.new()
 			name_label.text = hero.display_name
 			name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			name_label.add_theme_font_size_override("font_size", 14)
 			name_label.add_theme_color_override("font_color", Color(0.957, 0.957, 0.957, 1))
+			name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			v.add_child(name_label)
 			var remove_hint := Label.new()
 			remove_hint.text = "click to remove"
 			remove_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			remove_hint.add_theme_font_size_override("font_size", 10)
 			remove_hint.add_theme_color_override("font_color", Color(0.5, 0.55, 0.62, 1))
+			remove_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			v.add_child(remove_hint)
 		# Clicking a filled slot removes
 		card.gui_input.connect(func(event: InputEvent) -> void:
@@ -148,12 +154,14 @@ func _make_pool_card(hero: HeroData) -> Control:
 	var v := VBoxContainer.new()
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_theme_constant_override("separation", 4)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(v)
 
 	var box := ColorRect.new()
 	box.custom_minimum_size = Vector2(90, 110)
 	box.color = hero.sprite_color
 	box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(box)
 
 	var name_label := Label.new()
@@ -161,6 +169,7 @@ func _make_pool_card(hero: HeroData) -> Control:
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.add_theme_font_size_override("font_size", 13)
 	name_label.add_theme_color_override("font_color", Color(0.957, 0.957, 0.957, 1))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(name_label)
 
 	var chip := Label.new()
@@ -170,6 +179,7 @@ func _make_pool_card(hero: HeroData) -> Control:
 	chip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	chip.add_theme_font_size_override("font_size", 10)
 	chip.add_theme_color_override("font_color", Color(0.6, 0.7, 0.78, 1))
+	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(chip)
 
 	# Clicking adds to first empty slot (if not already picked)

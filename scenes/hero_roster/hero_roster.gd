@@ -65,6 +65,7 @@ func _make_card(hero: HeroData) -> Control:
 	var v := VBoxContainer.new()
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_theme_constant_override("separation", 6)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(v)
 
 	# Sprite color preview (a ColorRect — placeholder; real portraits in Phase 3+)
@@ -72,6 +73,7 @@ func _make_card(hero: HeroData) -> Control:
 	sprite_box.custom_minimum_size = Vector2(120, 160)
 	sprite_box.color = hero.sprite_color
 	sprite_box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	sprite_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(sprite_box)
 
 	# Name
@@ -80,12 +82,14 @@ func _make_card(hero: HeroData) -> Control:
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.add_theme_font_size_override("font_size", 18)
 	name_label.add_theme_color_override("font_color", Color(0.957, 0.957, 0.957, 1))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(name_label)
 
 	# Element + class chip
 	var chips := HBoxContainer.new()
 	chips.alignment = BoxContainer.ALIGNMENT_CENTER
 	chips.add_theme_constant_override("separation", 6)
+	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(chips)
 
 	var element_chip := _make_chip(
@@ -111,6 +115,7 @@ func _make_card(hero: HeroData) -> Control:
 
 func _make_chip(text: String, color: Color) -> Control:
 	var p := PanelContainer.new()
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = color
 	sb.corner_radius_top_left = 3
@@ -126,6 +131,7 @@ func _make_chip(text: String, color: Color) -> Control:
 	l.text = text
 	l.add_theme_font_size_override("font_size", 11)
 	l.add_theme_color_override("font_color", Color.WHITE)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(l)
 	return p
 

@@ -18,7 +18,7 @@ func _on_back_pressed() -> void:
 
 
 func _on_battle_pressed() -> void:
-	Game.change_scene("res://scenes/battle/battle.tscn")
+	Game.change_scene("res://scenes/party_builder/party_builder.tscn")
 
 
 func _on_heroes_pressed() -> void:

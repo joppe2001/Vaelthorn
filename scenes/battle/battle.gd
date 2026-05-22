@@ -13,8 +13,10 @@ const POPUP_SCENE := preload("res://scenes/battle/damage_popup.tscn")
 const SLASH_SCENE := preload("res://scenes/battle/slash_effect.tscn")
 const MAX_SKILL_SLOTS := 4
 
-# Hardcoded party for Phase 2e. Phase 3 introduces a PartyManager autoload.
-const PARTY_HERO_IDS := ["ember_knight", "crimson_lancer", "cinder_squire"]
+# Fallback if Game.selected_party_ids is empty/malformed. Party Builder
+# (Phase 3b) writes the real selection; this just keeps the battle scene
+# launchable from the editor too.
+const FALLBACK_PARTY_HERO_IDS := ["ember_knight", "crimson_lancer", "cinder_squire"]
 const HERO_COUNT := 3
 const ENEMY_COUNT := 3
 const TEST_ENEMY_ID := "training_slime"
@@ -78,9 +80,10 @@ func _ready() -> void:
 	if _enemy_template == null:
 		_fail_setup("missing enemy: " + TEST_ENEMY_ID); return
 
-	# Heroes
+	# Heroes — read from Game.selected_party_ids (Party Builder), with fallback
+	var party_ids: Array = _resolve_party_ids()
 	for i in HERO_COUNT:
-		var hero_id: String = PARTY_HERO_IDS[i]
+		var hero_id: String = party_ids[i]
 		var hero_data: HeroData = ContentRegistry.get_hero(hero_id)
 		if hero_data == null:
 			_fail_setup("missing hero: " + hero_id); return
@@ -123,6 +126,21 @@ func _ready() -> void:
 	EventBus.combat_started.emit(_battle_id)
 	print("[Battle] starting — 3v3 (seed=%d)" % _rng.rng.seed)
 	_next_turn()
+
+
+## Read the player's chosen party from Game.selected_party_ids, falling back
+## to FALLBACK_PARTY_HERO_IDS for any slot that's empty/missing/unknown.
+## Returns exactly HERO_COUNT entries.
+func _resolve_party_ids() -> Array:
+	var resolved: Array = []
+	for i in HERO_COUNT:
+		var id := ""
+		if i < Game.selected_party_ids.size():
+			id = String(Game.selected_party_ids[i])
+		if id == "" or ContentRegistry.get_hero(id) == null:
+			id = FALLBACK_PARTY_HERO_IDS[i]
+		resolved.append(id)
+	return resolved
 
 
 func _setup_skill_buttons() -> void:

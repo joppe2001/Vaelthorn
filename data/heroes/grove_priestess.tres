@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1_hero"]
+
+[resource]
+script = ExtResource("1_hero")
+id = "grove_priestess"
+display_name = "Grove Priestess"
+lore = "Speaker to the old roots. She does not strike; she tends what the strike has broken."
+element = 2
+class_type = 2
+base_hp = 1100
+base_atk = 140
+base_def = 60
+base_spd = 100
+base_crit_rate = 0.05
+base_crit_dmg = 1.5
+base_acc = 0.95
+base_eva = 0.06
+base_luk = 50
+base_res = 0.15
+skill_ids = PackedStringArray("basic_attack", "mend", "brace")
+ultimate_id = "aegis"
+passive_id = ""
+sprite_color = Color(0.36, 0.7, 0.42, 1)
+sprite_scale = 4.0
+sprite_y_offset = -96.0

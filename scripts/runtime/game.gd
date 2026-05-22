@@ -4,11 +4,14 @@ extends Node
 ## Autoloaded as `Game`. Owns the high-level state machine
 ## (title, hub, battle, ...) and provides scene transition helpers.
 
-enum State { BOOT, TITLE, HUB, BATTLE, RESULTS }
+enum State { BOOT, TITLE, HUB, BATTLE, RESULTS, ROSTER, DETAIL }
 
 const VERSION := "0.0.1-phase0"
 
 var current_state: State = State.BOOT
+
+## Cross-scene data passing: set by Roster before transitioning to Detail.
+var current_detail_hero_id: String = ""
 
 signal state_changed(from: State, to: State)
 

@@ -19,3 +19,7 @@ func _on_back_pressed() -> void:
 
 func _on_battle_pressed() -> void:
 	Game.change_scene("res://scenes/battle/battle.tscn")
+
+
+func _on_heroes_pressed() -> void:
+	Game.change_scene("res://scenes/hero_roster/hero_roster.tscn")

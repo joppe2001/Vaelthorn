@@ -1,265 +1,277 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene format=3 uid="uid://bf58nepo1a40q"]
 
-[ext_resource type="Script" path="res://scenes/battle/battle.gd" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/battle/unit.tscn" id="2"]
+[ext_resource type="Script" uid="uid://c30ihgy6u5p4u" path="res://scenes/battle/battle.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://54h6vjos324p" path="res://scenes/battle/unit.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/battle/turn_order_bar.tscn" id="3"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_TurnPanel"]
+content_margin_top = 10.0
+content_margin_bottom = 10.0
 bg_color = Color(0.114, 0.114, 0.173, 0.85)
-border_color = Color(0.337, 0.424, 0.525, 1)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
+border_color = Color(0.337, 0.424, 0.525, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_BtnNormal"]
-bg_color = Color(0.114, 0.114, 0.173, 1)
-border_color = Color(0.337, 0.424, 0.525, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
 content_margin_left = 12.0
 content_margin_top = 8.0
 content_margin_right = 12.0
 content_margin_bottom = 8.0
+bg_color = Color(0.114, 0.114, 0.173, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.337, 0.424, 0.525, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_BtnHover"]
-bg_color = Color(0.18, 0.18, 0.27, 1)
-border_color = Color(0.976, 0.78, 0.31, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
 content_margin_left = 12.0
 content_margin_top = 8.0
 content_margin_right = 12.0
 content_margin_bottom = 8.0
+bg_color = Color(0.18, 0.18, 0.27, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.976, 0.78, 0.31, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_UltBtnNormal"]
-bg_color = Color(0.25, 0.18, 0.07, 1)
-border_color = Color(0.976, 0.78, 0.31, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
 content_margin_left = 10.0
 content_margin_top = 8.0
 content_margin_right = 10.0
 content_margin_bottom = 8.0
+bg_color = Color(0.25, 0.18, 0.07, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.976, 0.78, 0.31, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_UltBtnHover"]
-bg_color = Color(0.45, 0.32, 0.12, 1)
-border_color = Color(1, 0.92, 0.4, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
 content_margin_left = 10.0
 content_margin_top = 8.0
 content_margin_right = 10.0
 content_margin_bottom = 8.0
+bg_color = Color(0.45, 0.32, 0.12, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.92, 0.4, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_UltBtnDisabled"]
-bg_color = Color(0.12, 0.12, 0.16, 1)
-border_color = Color(0.4, 0.34, 0.2, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
 content_margin_left = 10.0
 content_margin_top = 8.0
 content_margin_right = 10.0
 content_margin_bottom = 8.0
+bg_color = Color(0.12, 0.12, 0.16, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.34, 0.2, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 
-[node name="Battle" type="Node2D"]
+[node name="Battle" type="Node2D" unique_id=160209989]
 script = ExtResource("1")
 
-[node name="BgVoid" type="ColorRect" parent="."]
+[node name="BgVoid" type="ColorRect" parent="." unique_id=873733537]
 offset_right = 1280.0
 offset_bottom = 720.0
-color = Color(0.027, 0.027, 0.047, 1)
 mouse_filter = 2
+color = Color(0.027, 0.027, 0.047, 1)
 
-[node name="BgMid" type="ColorRect" parent="."]
+[node name="BgMid" type="ColorRect" parent="." unique_id=1747554528]
 offset_top = 280.0
 offset_right = 1280.0
 offset_bottom = 600.0
-color = Color(0.075, 0.075, 0.11, 1)
 mouse_filter = 2
+color = Color(0.075, 0.075, 0.11, 1)
 
-[node name="GroundBand" type="ColorRect" parent="."]
+[node name="GroundBand" type="ColorRect" parent="." unique_id=146792769]
 offset_top = 538.0
 offset_right = 1280.0
 offset_bottom = 600.0
-color = Color(0.102, 0.102, 0.145, 1)
 mouse_filter = 2
+color = Color(0.102, 0.102, 0.145, 1)
 
-[node name="GroundFall" type="ColorRect" parent="."]
+[node name="GroundFall" type="ColorRect" parent="." unique_id=154647576]
 offset_top = 600.0
 offset_right = 1280.0
 offset_bottom = 720.0
-color = Color(0.02, 0.02, 0.04, 1)
 mouse_filter = 2
+color = Color(0.02, 0.02, 0.04, 1)
 
-[node name="Camera" type="Camera2D" parent="."]
+[node name="Camera" type="Camera2D" parent="." unique_id=1269036948]
 position = Vector2(640, 360)
 
-[node name="PlayerUnit0" parent="." instance=ExtResource("2")]
+[node name="PlayerUnit0" parent="." unique_id=764039814 instance=ExtResource("2")]
 position = Vector2(160, 540)
 
-[node name="PlayerUnit1" parent="." instance=ExtResource("2")]
+[node name="PlayerUnit1" parent="." unique_id=1033044399 instance=ExtResource("2")]
 position = Vector2(330, 540)
 
-[node name="PlayerUnit2" parent="." instance=ExtResource("2")]
+[node name="PlayerUnit2" parent="." unique_id=127266050 instance=ExtResource("2")]
 position = Vector2(500, 540)
 
-[node name="EnemyUnit0" parent="." instance=ExtResource("2")]
+[node name="EnemyUnit0" parent="." unique_id=1117456289 instance=ExtResource("2")]
 position = Vector2(780, 540)
 
-[node name="EnemyUnit1" parent="." instance=ExtResource("2")]
+[node name="EnemyUnit1" parent="." unique_id=680160815 instance=ExtResource("2")]
 position = Vector2(950, 540)
 
-[node name="EnemyUnit2" parent="." instance=ExtResource("2")]
+[node name="EnemyUnit2" parent="." unique_id=1539532927 instance=ExtResource("2")]
 position = Vector2(1120, 540)
 
-[node name="PopupLayer" type="Node2D" parent="."]
+[node name="PopupLayer" type="Node2D" parent="." unique_id=1294747178]
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=1655996925]
 
-[node name="TurnPanel" type="PanelContainer" parent="UI"]
+[node name="TurnPanel" type="PanelContainer" parent="UI" unique_id=1014548511]
 offset_left = 480.0
 offset_top = 16.0
 offset_right = 800.0
 offset_bottom = 60.0
 theme_override_styles/panel = SubResource("StyleBox_TurnPanel")
 
-[node name="TurnLabel" type="Label" parent="UI/TurnPanel"]
+[node name="TurnLabel" type="Label" parent="UI/TurnPanel" unique_id=1153186516]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.976, 0.78, 0.31, 1)
+theme_override_font_sizes/font_size = 20
 text = "Round 1"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 20
-theme_override_colors/font_color = Color(0.976, 0.78, 0.31, 1)
 
-[node name="TurnOrderBar" parent="UI" instance=ExtResource("3")]
+[node name="TurnOrderBar" parent="UI" unique_id=121637131 instance=ExtResource("3")]
 offset_left = 480.0
 offset_top = 70.0
 offset_right = 800.0
 offset_bottom = 110.0
 
-[node name="ActionPanel" type="PanelContainer" parent="UI"]
+[node name="ActionPanel" type="PanelContainer" parent="UI" unique_id=172172113]
 offset_left = 180.0
 offset_top = 612.0
 offset_right = 1100.0
 offset_bottom = 692.0
 theme_override_styles/panel = SubResource("StyleBox_TurnPanel")
 
-[node name="Actions" type="HBoxContainer" parent="UI/ActionPanel"]
-alignment = 1
+[node name="Actions" type="HBoxContainer" parent="UI/ActionPanel" unique_id=1138801593]
+layout_mode = 2
 theme_override_constants/separation = 16
+alignment = 1
 
-[node name="SkillBtn0" type="Button" parent="UI/ActionPanel/Actions"]
+[node name="SkillBtn0" type="Button" parent="UI/ActionPanel/Actions" unique_id=940478112]
 custom_minimum_size = Vector2(165, 60)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
+theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
+theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
+theme_override_styles/hover = SubResource("StyleBox_BtnHover")
 text = "Strike"
-theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
-theme_override_styles/hover = SubResource("StyleBox_BtnHover")
-theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
-theme_override_font_sizes/font_size = 16
+
+[node name="SkillBtn1" type="Button" parent="UI/ActionPanel/Actions" unique_id=1655944842]
+custom_minimum_size = Vector2(165, 60)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
-
-[node name="SkillBtn1" type="Button" parent="UI/ActionPanel/Actions"]
-custom_minimum_size = Vector2(165, 60)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
+theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
+theme_override_styles/hover = SubResource("StyleBox_BtnHover")
 text = "Flame Slash"
-theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
-theme_override_styles/hover = SubResource("StyleBox_BtnHover")
-theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
-theme_override_font_sizes/font_size = 16
+
+[node name="SkillBtn2" type="Button" parent="UI/ActionPanel/Actions" unique_id=286466498]
+custom_minimum_size = Vector2(165, 60)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
-
-[node name="SkillBtn2" type="Button" parent="UI/ActionPanel/Actions"]
-custom_minimum_size = Vector2(165, 60)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
+theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
+theme_override_styles/hover = SubResource("StyleBox_BtnHover")
 text = "Brace"
-theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
-theme_override_styles/hover = SubResource("StyleBox_BtnHover")
-theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
-theme_override_font_sizes/font_size = 16
+
+[node name="SkillBtn3" type="Button" parent="UI/ActionPanel/Actions" unique_id=1234954536]
+custom_minimum_size = Vector2(165, 60)
+layout_mode = 2
 theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
-
-[node name="SkillBtn3" type="Button" parent="UI/ActionPanel/Actions"]
-custom_minimum_size = Vector2(165, 60)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
+theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
+theme_override_styles/hover = SubResource("StyleBox_BtnHover")
 text = "Shatter"
-theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
-theme_override_styles/hover = SubResource("StyleBox_BtnHover")
-theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
-theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
 
-[node name="UltBtn" type="Button" parent="UI/ActionPanel/Actions"]
+[node name="UltBtn" type="Button" parent="UI/ActionPanel/Actions" unique_id=932042798]
 custom_minimum_size = Vector2(165, 60)
-text = "Ultimate"
-theme_override_styles/normal = SubResource("StyleBox_UltBtnNormal")
-theme_override_styles/hover = SubResource("StyleBox_UltBtnHover")
-theme_override_styles/pressed = SubResource("StyleBox_UltBtnNormal")
-theme_override_styles/disabled = SubResource("StyleBox_UltBtnDisabled")
-theme_override_font_sizes/font_size = 16
+layout_mode = 2
 theme_override_colors/font_color = Color(0.976, 0.78, 0.31, 1)
 theme_override_colors/font_hover_color = Color(1, 0.96, 0.55, 1)
 theme_override_colors/font_disabled_color = Color(0.5, 0.42, 0.25, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBox_UltBtnNormal")
+theme_override_styles/pressed = SubResource("StyleBox_UltBtnNormal")
+theme_override_styles/hover = SubResource("StyleBox_UltBtnHover")
+theme_override_styles/disabled = SubResource("StyleBox_UltBtnDisabled")
+text = "Ultimate"
 
-[node name="EndPanel" type="ColorRect" parent="UI"]
+[node name="EndPanel" type="ColorRect" parent="UI" unique_id=710491686]
+visible = false
 offset_right = 1280.0
 offset_bottom = 720.0
 color = Color(0, 0, 0, 0.65)
-visible = false
 
-[node name="EndVBox" type="VBoxContainer" parent="UI/EndPanel"]
+[node name="EndVBox" type="VBoxContainer" parent="UI/EndPanel" unique_id=2088948049]
+layout_mode = 0
 offset_left = 440.0
 offset_top = 240.0
 offset_right = 840.0
 offset_bottom = 480.0
-alignment = 1
 theme_override_constants/separation = 32
+alignment = 1
 
-[node name="ResultLabel" type="Label" parent="UI/EndPanel/EndVBox"]
+[node name="ResultLabel" type="Label" parent="UI/EndPanel/EndVBox" unique_id=1850157007]
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
 text = "VICTORY"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 64
 
-[node name="ReturnBtn" type="Button" parent="UI/EndPanel/EndVBox"]
+[node name="ReturnBtn" type="Button" parent="UI/EndPanel/EndVBox" unique_id=956127128]
 custom_minimum_size = Vector2(0, 56)
-text = "Return to Hub"
-theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
-theme_override_styles/hover = SubResource("StyleBox_BtnHover")
-theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
-theme_override_font_sizes/font_size = 20
+layout_mode = 2
 theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_colors/font_hover_color = Color(0.976, 0.78, 0.31, 1)
+theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("StyleBox_BtnNormal")
+theme_override_styles/pressed = SubResource("StyleBox_BtnNormal")
+theme_override_styles/hover = SubResource("StyleBox_BtnHover")
+text = "Return to Hub"
 
 [connection signal="pressed" from="UI/EndPanel/EndVBox/ReturnBtn" to="." method="_on_return_pressed"]

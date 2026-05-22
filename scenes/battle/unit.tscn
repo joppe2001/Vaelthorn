@@ -19,6 +19,10 @@ corner_radius_bottom_left = 2
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_HPFill"]
 bg_color = Color(0.796, 0.255, 0.294, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_color = Color(0.8951633, 0.3305886, 0.41390115, 0.99607843)
 corner_radius_top_left = 1
 corner_radius_top_right = 1
 corner_radius_bottom_right = 1
@@ -27,10 +31,11 @@ corner_radius_bottom_left = 1
 [sub_resource type="StyleBoxFlat" id="StyleBox_UltBg"]
 bg_color = Color(0.07, 0.07, 0.12, 1)
 border_width_left = 1
-border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.3, 0.3, 0.4, 1)
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
 
 [sub_resource type="StyleBoxFlat" id="StyleBox_UltFill"]
 bg_color = Color(0.976, 0.78, 0.31, 1)
@@ -114,24 +119,22 @@ show_percentage = false
 [node name="HPLabel" type="Label" parent="UIRoot" unique_id=1300797005]
 layout_mode = 0
 offset_left = 56.0
-offset_top = 55.0
+offset_top = 56.0
 offset_right = 185.0
-offset_bottom = 70.0
+offset_bottom = 71.0
 theme_override_colors/font_color = Color(0.957, 0.957, 0.957, 1)
 theme_override_font_sizes/font_size = 13
 text = "100 / 100"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="UltimateGauge" type="ProgressBar" parent="UIRoot"]
+[node name="UltimateGauge" type="ProgressBar" parent="UIRoot" unique_id=1847945449]
 layout_mode = 0
 offset_left = 52.0
-offset_top = 76.0
+offset_top = 68.0
 offset_right = 188.0
-offset_bottom = 84.0
+offset_bottom = 76.0
 mouse_filter = 2
 theme_override_styles/background = SubResource("StyleBox_UltBg")
 theme_override_styles/fill = SubResource("StyleBox_UltFill")
-max_value = 100.0
-value = 0.0
 show_percentage = false

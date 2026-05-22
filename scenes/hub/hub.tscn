@@ -82,6 +82,16 @@ custom_minimum_size = Vector2(240, 56)
 text = "  Enter Battle  "
 
 [node name="Spacer2" type="Control" parent="Center/VBox"]
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+
+[node name="HeroesBtn" type="Button" parent="Center/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+custom_minimum_size = Vector2(240, 56)
+text = "  Hero Roster  "
+
+[node name="Spacer3" type="Control" parent="Center/VBox"]
 custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
@@ -91,4 +101,5 @@ size_flags_horizontal = 4
 text = "  < Back to Title  "
 
 [connection signal="pressed" from="Center/VBox/BattleBtn" to="." method="_on_battle_pressed"]
+[connection signal="pressed" from="Center/VBox/HeroesBtn" to="." method="_on_heroes_pressed"]
 [connection signal="pressed" from="Center/VBox/BackBtn" to="." method="_on_back_pressed"]

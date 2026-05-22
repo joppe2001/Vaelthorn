@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1_hero"]
+
+[resource]
+script = ExtResource("1_hero")
+id = "stormarcher"
+display_name = "Stormarcher"
+lore = "The first arrow leaves before the storm answers. The second leaves with it."
+element = 3
+class_type = 5
+base_hp = 1100
+base_atk = 175
+base_def = 50
+base_spd = 125
+base_crit_rate = 0.18
+base_crit_dmg = 1.65
+base_acc = 0.97
+base_eva = 0.10
+base_luk = 65
+base_res = 0.02
+skill_ids = PackedStringArray("basic_attack", "brace", "shatter")
+ultimate_id = "crimson_blitz"
+passive_id = ""
+sprite_color = Color(0.78, 0.88, 0.96, 1)
+sprite_scale = 4.0
+sprite_y_offset = -96.0

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkillData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/skill_data.gd" id="1_skill"]
+[ext_resource type="Script" path="res://scripts/combat/effects/effect_heal.gd" id="2_heal"]
+
+[sub_resource type="Resource" id="EffectHeal_mend"]
+script = ExtResource("2_heal")
+trigger = 0
+heal_mult = 1.6
+
+[resource]
+script = ExtResource("1_skill")
+id = "mend"
+skill_name = "Mend"
+description = "Restores HP equal to 160% of the caster's ATK."
+target_type = 4
+element = -1
+cooldown = 0
+atb_cost = 100
+effects = Array[Effect]([SubResource("EffectHeal_mend")])

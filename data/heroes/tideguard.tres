@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1_hero"]
+
+[resource]
+script = ExtResource("1_hero")
+id = "tideguard"
+display_name = "Tideguard"
+lore = "Sworn of the Wave Choir. Where the line breaks, Tideguard stands."
+element = 1
+class_type = 1
+base_hp = 1700
+base_atk = 130
+base_def = 120
+base_spd = 90
+base_crit_rate = 0.08
+base_crit_dmg = 1.5
+base_acc = 0.95
+base_eva = 0.04
+base_luk = 30
+base_res = 0.1
+skill_ids = PackedStringArray("basic_attack", "brace", "shatter")
+ultimate_id = "aegis"
+passive_id = ""
+sprite_color = Color(0.27, 0.55, 0.88, 1)
+sprite_scale = 4.0
+sprite_y_offset = -96.0

@@ -28,6 +28,24 @@ const LUNGE_OUT := 0.225
 const LUNGE_BACK := 0.27
 const DEFAULT_ATB_COST := 100.0
 
+# Per-skill slash VFX variant. Maps a skill id to one of the animations
+# defined in scenes/battle/slash_effect.tscn's SpriteFrames.
+#   "slash1" — sharp horizontal cut (default; basic attacks)
+#   "slash2" — wider aggressive arc (fire / heavy single-target)
+#   "thrust" — tighter jab (piercing / debuff)
+#   ""        — no slash spawned (SELF / heal skills)
+const SKILL_TO_SLASH := {
+	"basic_attack":   &"slash1",
+	"flame_slash":    &"slash2",
+	"shatter":        &"thrust",
+	"pyre_breaker":   &"slash2",
+	"crimson_blitz":  &"slash2",
+	"enemy_basic":    &"slash1",
+	"brace":          &"",
+	"aegis":          &"",
+	"mend":           &"",
+}
+
 # Slight color shifts so identical-data slimes are visually distinct.
 const ENEMY_TINTS := [
 	Color(0.45, 0.85, 0.55, 1),
@@ -565,15 +583,16 @@ func _make_enemy_skill(idx: int) -> SkillData:
 # ─── Effect resolution ───────────────────────────────────────────────
 
 func _resolve_skill(skill: SkillData, attacker_stats: Dictionary, target_stats: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int, target_is_hero: bool) -> void:
+	var slash_variant: StringName = SKILL_TO_SLASH.get(skill.id, &"slash1")
 	for effect in skill.effects:
 		var ctx := EffectContext.new(attacker_stats, target_stats, attacker_id, target_id, skill, _rng)
 		var result: Dictionary = effect.apply(ctx)
-		_apply_result(result, attacker_id, target_id, target_unit, target_idx, target_is_hero)
+		_apply_result(result, attacker_id, target_id, target_unit, target_idx, target_is_hero, slash_variant)
 		if result.get("kind") == "miss":
 			break
 
 
-func _apply_result(result: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int, target_is_hero: bool) -> void:
+func _apply_result(result: Dictionary, attacker_id: String, target_id: String, target_unit: Node2D, target_idx: int, target_is_hero: bool, slash_variant: StringName = &"slash1") -> void:
 	match result.get("kind", "none"):
 		"damage":
 			var amount: int = int(result.damage)
@@ -604,7 +623,8 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 			# Attacker to the RIGHT of target -> slash bulges right -> flipped = false
 			var flipped: bool = target_unit.global_position.x > _attacker_x(attacker_id)
 			var slash_x: int = -20 if flipped else 20
-			_spawn_slash(target_unit.global_position + Vector2(slash_x, -110), flipped)
+			if slash_variant != &"":
+				_spawn_slash(target_unit.global_position + Vector2(slash_x, -110), flipped, slash_variant)
 			if result.is_crit:
 				_shake_camera(12.0, 0.22)
 			else:
@@ -760,11 +780,12 @@ func _lunge(unit: Node2D, toward: Vector2) -> void:
 	tween.tween_property(unit, "position", origin, LUNGE_BACK).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 
 
-func _spawn_slash(at: Vector2, flipped: bool) -> void:
+func _spawn_slash(at: Vector2, flipped: bool, variant: StringName = &"slash1") -> void:
 	var effect := SLASH_SCENE.instantiate()
 	_popup_layer.add_child(effect)
 	effect.global_position = at
 	effect.set_flipped(flipped)
+	effect.play_variant(variant)
 
 
 func _shake_camera(amount: float, duration: float) -> void:

@@ -91,8 +91,10 @@ path. Each item is small + visible.
       takes a critical hit. Sells the "ow" beyond the red tint.
 - [ ] **Death effect** — small particle burst + brief screen darken when
       a unit dies, before the lying-down sprite settles.
-- [ ] **Status icon pulse animations** — B icon pulses orange, - icon
-      flickers magenta, etc. (Phase 5 polish.)
+- [x] **Status icon pulse animations** — shipped. Subtle ~1.4s scale
+      cycle (1.0 → 1.06 → 1.0) on every status badge so they read as
+      alive, not pasted. Tween auto-loops; queue_free kills it with
+      the icon when the status expires.
 
 ## Engineering hygiene
 

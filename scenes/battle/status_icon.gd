@@ -51,6 +51,19 @@ func _ready() -> void:
 	_bg_style.corner_radius_bottom_left = 3
 	_bg_style.corner_radius_bottom_right = 3
 	add_theme_stylebox_override("panel", _bg_style)
+	_start_pulse()
+
+
+## Gentle scale + brightness pulse so the badge feels alive, not pasted.
+## ~1.4s cycle, ~6% scale swing, runs forever (the parent queue_frees
+## the icon when the status expires, which kills the tween with it).
+func _start_pulse() -> void:
+	_icon.pivot_offset = _icon.size * 0.5
+	var tween := create_tween().set_loops()
+	tween.tween_property(_icon, "scale", Vector2(1.06, 1.06), 0.7) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(_icon, "scale", Vector2(1.0, 1.0), 0.7) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func bind(data: StatusEffectData, turns: int) -> void:

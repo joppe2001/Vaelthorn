@@ -40,11 +40,17 @@ var _is_selected: bool = false
 var statuses: StatusManager = StatusManager.new()
 var _ultimate_value: float = 0.0
 
-# Cached visual height of the sprite (frame_h * sprite_scale). Populated
-# by bind() and consumed by get_anchor(). Default sized for a 64x64 hero
-# at scale 4; bind() overwrites with the real measurement.
-var _visual_height: float = 256.0
-var _sprite_y_offset: float = -96.0
+# Cached character bounds in unit-local coordinates. Populated by bind()
+# by scanning the alpha channel of the first idle frame — so the anchors
+# track the actual character pixels, not the bounding frame (which may
+# include empty padding above the head or below the feet).
+#
+#   _char_top_y    — y of the topmost opaque pixel (head/hair tip)
+#   _char_bottom_y — y of the bottommost opaque pixel (feet)
+#   _char_height   — total visible character height
+var _char_top_y: float = -200.0
+var _char_bottom_y: float = 0.0
+var _char_height: float = 200.0
 
 
 # ─── Ultimate gauge ──────────────────────────────────────────────────
@@ -178,7 +184,6 @@ func _process(delta: float) -> void:
 
 func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrames = null, sprite_scale: float = 4.0, sprite_y_offset: float = -96.0) -> void:
 	_name_label.text = unit_name
-	_sprite_y_offset = sprite_y_offset
 
 	if idle_frames != null:
 		_using_anim_sprite = true
@@ -190,9 +195,9 @@ func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrame
 		if idle_frames.has_animation(&"idle"):
 			_anim_sprite.animation = &"idle"
 			_anim_sprite.play()
-		# Measure the actual frame height so get_anchor() works for both
-		# 64px Mana Seed heroes and 16px 0x72 enemies.
-		_visual_height = _measure_visual_height(idle_frames, sprite_scale)
+		# Scan the actual character pixels in the first idle frame so
+		# anchors track the body (not the empty cell padding).
+		_measure_character_bounds(idle_frames, sprite_scale, sprite_y_offset)
 	else:
 		_using_anim_sprite = false
 		_sprite.visible = true
@@ -201,7 +206,9 @@ func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrame
 		_base_color = color
 		# Placeholder polygon — use a roughly hero-sized default so popups
 		# don't collide with the placeholder square.
-		_visual_height = 220.0
+		_char_top_y = -180.0
+		_char_bottom_y = 0.0
+		_char_height = 180.0
 
 	_hp_bar.max_value = max_hp
 	_hp_bar.value = max_hp
@@ -209,53 +216,87 @@ func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrame
 	_update_hp_color(max_hp, max_hp)
 
 
-## Pull the first-frame texture out of the idle animation and figure out
-## how tall the sprite renders on screen. Works for AtlasTexture
-## (Mana Seed sheets) and plain Texture2D (0x72 single-frame PNGs).
-## Falls back to the 64*scale default if the frames object is missing
-## metadata.
-func _measure_visual_height(frames: SpriteFrames, sprite_scale: float) -> float:
-	var anim: StringName = &"idle"
-	if not frames.has_animation(anim):
-		return 64.0 * sprite_scale
-	if frames.get_frame_count(anim) <= 0:
-		return 64.0 * sprite_scale
-	var tex: Texture2D = frames.get_frame_texture(anim, 0)
-	if tex == null:
-		return 64.0 * sprite_scale
-	if tex is AtlasTexture:
-		return (tex as AtlasTexture).region.size.y * sprite_scale
-	return tex.get_height() * sprite_scale
-
-
-## World position of a named anchor point on this unit. Lets VFX spawn
-## at semantic locations ("head", "center") without hardcoding pixel
-## offsets that break when sprite scale or character size changes.
+## Scan the alpha channel of the first idle frame to find the actual
+## character bounds (top opaque pixel to bottom opaque pixel). Cached
+## results feed get_anchor(), so anchors latch onto the real character
+## body — ignoring any empty padding above the head or below the feet
+## that the sprite cell happens to include.
 ##
-##   feet       — y=0 (unit origin, on the ground)
-##   center     — sprite frame center (torso-ish)
-##   head       — top third of the sprite (where status icons / face sit)
-##   over_head  — just above the head (where damage numbers float)
-##   above      — well above the head (where status banners float)
+## Works for AtlasTexture (Mana Seed sheets) and plain Texture2D
+## (0x72 single-frame PNGs). Falls back to safe defaults if the image
+## can't be read (compressed import, missing texture, etc).
+func _measure_character_bounds(frames: SpriteFrames, sprite_scale: float, sprite_y_offset: float) -> void:
+	var fallback_top: float = sprite_y_offset - 100.0
+	var fallback_bot: float = sprite_y_offset + 28.0
+	_char_top_y = fallback_top
+	_char_bottom_y = fallback_bot
+	_char_height = fallback_bot - fallback_top
+
+	if not frames.has_animation(&"idle"):
+		return
+	if frames.get_frame_count(&"idle") <= 0:
+		return
+	var tex: Texture2D = frames.get_frame_texture(&"idle", 0)
+	if tex == null:
+		return
+
+	var frame_image: Image
+	if tex is AtlasTexture:
+		var atlas_tex: AtlasTexture = tex
+		if atlas_tex.atlas == null:
+			return
+		var atlas_image: Image = atlas_tex.atlas.get_image()
+		if atlas_image == null:
+			return
+		frame_image = atlas_image.get_region(atlas_tex.region)
+	else:
+		frame_image = tex.get_image()
+	if frame_image == null:
+		return
+
+	var bounds: Rect2i = frame_image.get_used_rect()
+	if bounds.size.y <= 0:
+		return
+
+	# Convert frame-pixel coords to unit-local y. The AnimatedSprite2D is
+	# centered_texture by default, so the frame's pixel y=0 sits at
+	# (sprite_y_offset - frame_h * sprite_scale / 2) in unit-local space.
+	var frame_h: float = float(frame_image.get_height())
+	var frame_top_local: float = sprite_y_offset - frame_h * sprite_scale * 0.5
+	_char_top_y = frame_top_local + float(bounds.position.y) * sprite_scale
+	_char_bottom_y = frame_top_local + float(bounds.position.y + bounds.size.y) * sprite_scale
+	_char_height = _char_bottom_y - _char_top_y
+
+
+## World position of a named anchor point on this unit. Anchors map to
+## the actual character pixels (measured from the idle frame), so they
+## stay correct across heroes (64px Mana Seed), goblins (16px 0x72),
+## or any future sprite — no per-character tuning needed.
+##
+##   feet       — bottommost opaque pixel (ground contact)
+##   center     — midpoint between feet and top of head (torso/chest)
+##   head       — upper ~15% band (face / status icon row)
+##   over_head  — 20px above the topmost pixel (damage numbers)
+##   above      — 60px above the topmost pixel (status banner)
 ##
 ## Unknown anchor names log a warning and fall back to feet.
 func get_anchor(anchor: StringName) -> Vector2:
-	var local: Vector2
+	var local_y: float
 	match anchor:
 		&"feet":
-			local = Vector2.ZERO
+			local_y = _char_bottom_y
 		&"center":
-			local = Vector2(0, _sprite_y_offset)
+			local_y = (_char_top_y + _char_bottom_y) * 0.5
 		&"head":
-			local = Vector2(0, _sprite_y_offset - _visual_height * 0.32)
+			local_y = _char_top_y + _char_height * 0.15
 		&"over_head":
-			local = Vector2(0, _sprite_y_offset - _visual_height * 0.50)
+			local_y = _char_top_y - 20.0
 		&"above":
-			local = Vector2(0, _sprite_y_offset - _visual_height * 0.70)
+			local_y = _char_top_y - 60.0
 		_:
 			push_warning("[Unit] unknown anchor: %s" % anchor)
-			local = Vector2.ZERO
-	return global_position + local
+			local_y = _char_bottom_y
+	return global_position + Vector2(0, local_y)
 
 
 func set_hp(current: int, max_hp: int) -> void:

@@ -31,4 +31,13 @@ class_name EnemyData extends Resource
 @export var gold_reward: int = 100
 
 @export_group("Visuals")
+## Fallback color tint when no SpriteFrames are set (placeholder Polygon2D).
 @export var sprite_color: Color = Color(0.53, 0.78, 0.6, 1.0)
+## When set, the Unit shows an AnimatedSprite2D using these frames instead of
+## the placeholder polygon. Same shape as HeroData.idle_frames — must contain
+## an "idle" animation at minimum; "hurt" and "dead" are optional.
+@export var idle_frames: SpriteFrames = null
+## Integer scale for pixel-perfect rendering.
+@export var sprite_scale: float = 4.0
+## Y offset so the visual feet line up with the ground band.
+@export var sprite_y_offset: float = -96.0

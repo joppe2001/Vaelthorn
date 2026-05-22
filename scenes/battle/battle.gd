@@ -113,7 +113,16 @@ func _ready() -> void:
 		_atb_enemies.append(0.0)
 		var unit: Node2D = _enemy_units[i]
 		var tint: Color = ENEMY_TINTS[i % ENEMY_TINTS.size()]
-		unit.bind("%s %d" % [_enemy_template.display_name, i + 1], tint, int(stats.hp))
+		# Use real sprite frames if the template provides them; tint becomes
+		# the sprite_color fallback for entities without art yet.
+		unit.bind(
+			"%s %d" % [_enemy_template.display_name, i + 1],
+			tint,
+			int(stats.hp),
+			_enemy_template.idle_frames,
+			_enemy_template.sprite_scale,
+			_enemy_template.sprite_y_offset,
+		)
 		unit.set_ultimate_visible(false)  # enemies don't have ultimates
 		var captured_idx := i
 		unit.clicked.connect(func(_u: Node2D): _on_enemy_clicked(captured_idx))

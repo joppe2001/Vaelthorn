@@ -45,5 +45,5 @@ script = ExtResource("1")
 [node name="SlashAnim" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_slash")
 animation = &"slash"
-scale = Vector2(6, 6)
+scale = Vector2(4, 4)
 modulate = Color(1, 1, 0.85, 1)

@@ -11,6 +11,9 @@ extends Node2D
 
 const POPUP_SCENE := preload("res://scenes/battle/damage_popup.tscn")
 const SLASH_SCENE := preload("res://scenes/battle/slash_effect.tscn")
+const HEAL_VFX_SCENE := preload("res://scenes/battle/heal_effect.tscn")
+const BUFF_VFX_SCENE := preload("res://scenes/battle/buff_effect.tscn")
+const DEBUFF_VFX_SCENE := preload("res://scenes/battle/debuff_effect.tscn")
 const MAX_SKILL_SLOTS := 4
 
 # Fallback if Game.selected_party_ids is empty/malformed. Party Builder
@@ -674,6 +677,7 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 				push_error("[Battle] missing status: " + str(result.status_id)); return
 			target_unit.add_status(result.status_id, result.duration, result.power, data)
 			_spawn_text_popup(target_unit.global_position + Vector2(0, -260), data.display_name.to_upper(), data.icon_color)
+			_spawn_status_vfx(target_unit, data)
 			EventBus.status_applied.emit(target_id, result.status_id)
 		"status_resisted":
 			_spawn_text_popup(target_unit.global_position + Vector2(0, -260), "RESIST", Color(0.6, 0.8, 1.0))
@@ -686,6 +690,7 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 				_enemies_hp[target_idx] = min(int(_enemies_stats[target_idx].hp), _enemies_hp[target_idx] + amount)
 				target_unit.set_hp(_enemies_hp[target_idx], int(_enemies_stats[target_idx].hp))
 			_spawn_text_popup(target_unit.global_position + Vector2(0, -200), "+%d" % amount, Color(0.4, 0.85, 0.4))
+			_spawn_heal_vfx(target_unit)
 		"none":
 			pass
 
@@ -814,6 +819,28 @@ func _spawn_slash(at: Vector2, flipped: bool, variant: StringName = &"slash1") -
 	effect.global_position = at
 	effect.set_flipped(flipped)
 	effect.play_variant(variant)
+
+
+## Pick the buff vs debuff VFX from the status's modifier sign.
+##   modifier_amount > 0  -> buff (gold ring + sparkles)
+##   anything else (negative modifier, DoT tick, stun) -> debuff
+## (heal lands as a "heal" result, not a status, so it routes through
+## _spawn_heal_vfx separately).
+func _spawn_status_vfx(target_unit: Node2D, data: StatusEffectData) -> void:
+	var is_buff: bool = data.modifier_amount > 0.0 \
+		and data.tick_kind == StatusEffectData.TickKind.NONE \
+		and not data.skip_turn
+	var scene: PackedScene = BUFF_VFX_SCENE if is_buff else DEBUFF_VFX_SCENE
+	var effect := scene.instantiate()
+	_popup_layer.add_child(effect)
+	# Roughly the unit's torso, so the ring frames the upper body.
+	effect.global_position = target_unit.global_position + Vector2(0, -140)
+
+
+func _spawn_heal_vfx(target_unit: Node2D) -> void:
+	var effect := HEAL_VFX_SCENE.instantiate()
+	_popup_layer.add_child(effect)
+	effect.global_position = target_unit.global_position + Vector2(0, -100)
 
 
 func _shake_camera(amount: float, duration: float) -> void:

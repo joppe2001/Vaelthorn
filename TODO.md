@@ -57,13 +57,14 @@ path. Each item is small + visible.
 - [ ] **Crit punch-up** — short screen flash + brief time-slow (Engine.
       time_scale = 0.5 for ~150 ms) + extra slash overlay. Crits should
       stop you cold for a beat.
-- [ ] **Heal VFX** — green particle puff or upward shimmer when Mend
-      lands. Right now you just see the `+amount` popup.
-- [ ] **Buff VFX (Brace / Aegis)** — gold sparkle ring rising around the
-      caster on apply. Status badge already exists; this is the moment-
-      of-application flair.
-- [ ] **Debuff VFX (Shatter)** — dark crack ripple on the target when
-      DEF_DOWN lands. Complement the pink "-" status icon.
+- [x] **Heal VFX** — shipped. Green expanding glow + 7 rising shimmer
+      motes on the target when Mend (or any heal result) lands.
+- [x] **Buff VFX (Brace / Aegis)** — shipped. Two-pulse gold ring + 10
+      diamond sparkles radiating from the caster when a positive
+      modifier status applies.
+- [x] **Debuff VFX (Shatter)** — shipped. Jagged dark cracked rings +
+      6 spokes shooting outward when a negative-modifier / DoT / stun
+      status applies.
 - [ ] **Burn ambient VFX** — small flame particles flickering above the
       burning unit each turn, on top of the orange B badge.
 - [ ] **Ultimate cut-in (the big one)** — when an ult is used: dim the

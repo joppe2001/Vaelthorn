@@ -14,21 +14,24 @@ extends Node2D
 
 @onready var _sprite: Sprite2D = $Sprite
 
-const POP_IN := 0.05
+const POP_IN := 0.04
 const HOLD := 0.10
-const FADE_OUT := 0.18
+const FADE_OUT := 0.20
+const OVERSHOOT_SCALE := 1.15
 
 
 func _ready() -> void:
 	var target_scale: Vector2 = _sprite.scale
-	_sprite.scale = target_scale * 0.65
+	_sprite.scale = target_scale * 0.4
 	_sprite.modulate.a = 0.0
 
 	var tween := create_tween()
-	# Pop in: snap to full scale + opaque
+	# Pop in: overshoot scale slightly, snap to opaque white
 	tween.set_parallel(true)
-	tween.tween_property(_sprite, "scale", target_scale, POP_IN).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_sprite, "modulate:a", 1.0, POP_IN)
+	tween.tween_property(_sprite, "scale", target_scale * OVERSHOOT_SCALE, POP_IN).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(_sprite, "modulate:a", 1.0, POP_IN * 0.6)
+	# Settle to target scale (the bounce-back from the overshoot)
+	tween.chain().tween_property(_sprite, "scale", target_scale, 0.06).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	# Hold
 	tween.chain().tween_interval(HOLD)
 	# Fade out

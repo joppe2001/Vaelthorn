@@ -177,25 +177,37 @@ func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrame
 
 
 func set_hp(current: int, max_hp: int) -> void:
+	var prev: float = _hp_bar.value
 	_hp_bar.value = current
 	_hp_label.text = "%d / %d" % [current, max_hp]
 	_update_hp_color(current, max_hp)
 
+	# Only play hit feedback if HP actually went DOWN (heals shouldn't shake).
+	if current >= int(prev):
+		return
+
+	# Hit flash — bright red tint so the "ouch" reads at a glance.
 	var flash := create_tween()
 	if _using_anim_sprite:
-		flash.tween_property(_anim_sprite, "modulate", Color(1.6, 1.6, 1.6, 1.0), 0.04)
-		flash.tween_property(_anim_sprite, "modulate", Color.WHITE, 0.18)
+		flash.tween_property(_anim_sprite, "modulate", Color(2.2, 0.6, 0.6, 1.0), 0.05)
+		flash.tween_property(_anim_sprite, "modulate", Color.WHITE, 0.22)
 	else:
-		flash.tween_property(_sprite, "color", Color(1.4, 1.4, 1.4, 1.0), 0.04)
-		flash.tween_property(_sprite, "color", _base_color, 0.18)
+		flash.tween_property(_sprite, "color", Color(1.6, 0.55, 0.55, 1.0), 0.05)
+		flash.tween_property(_sprite, "color", _base_color, 0.22)
 
+	# Scale punch on the sprite holder
 	var punch := create_tween()
-	punch.tween_property(_sprite_holder, "scale", Vector2(1.06, 0.94), 0.06)
-	punch.tween_property(_sprite_holder, "scale", Vector2(1.0, 1.0), 0.12)
+	punch.tween_property(_sprite_holder, "scale", Vector2(1.10, 0.88), 0.07)
+	punch.tween_property(_sprite_holder, "scale", Vector2(1.0, 1.0), 0.16)
 
+	# Position bump — bigger now so it reads on small enemies (goblins)
+	# and the cleaner-art heroes alike.
+	var bump_dist: float = 14.0
+	# Bump AWAY from attacker would need to know direction; approximate with
+	# a horizontal jolt in the direction of the hit indicator.
 	var bump := create_tween()
-	bump.tween_property(self, "position:x", position.x + 8, 0.06)
-	bump.tween_property(self, "position:x", position.x, 0.10)
+	bump.tween_property(self, "position:x", position.x + bump_dist, 0.07).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	bump.tween_property(self, "position:x", position.x, 0.16).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_IN)
 
 
 # ─── Targeting + death ───────────────────────────────────────────────

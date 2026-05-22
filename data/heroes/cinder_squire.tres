@@ -28,4 +28,4 @@ sprite_color = Color(0.95, 0.78, 0.32, 1)
 portrait = ExtResource("3_portrait")
 idle_frames = ExtResource("2_frames")
 sprite_scale = 4.0
-sprite_y_offset = -96.0
+sprite_y_offset = -72.0

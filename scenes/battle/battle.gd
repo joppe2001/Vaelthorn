@@ -599,14 +599,16 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 			if not killed:
 				target_unit.play_hurt()
 			_spawn_popup(target_unit.global_position + Vector2(0, -200), amount, result.is_crit, result.is_lucky)
-			# Determine flip: if the attacker is on the LEFT of the target, slash unflipped (concave-right)
-			var flipped: bool = target_unit.global_position.x < _attacker_x(attacker_id)
-			var slash_x: int = 20 if flipped else -20
+			# Slash arc bulges toward the side the sword came FROM.
+			# Attacker to the LEFT of target  -> slash bulges left -> flipped = true (mirror default texture)
+			# Attacker to the RIGHT of target -> slash bulges right -> flipped = false
+			var flipped: bool = target_unit.global_position.x > _attacker_x(attacker_id)
+			var slash_x: int = -20 if flipped else 20
 			_spawn_slash(target_unit.global_position + Vector2(slash_x, -110), flipped)
 			if result.is_crit:
-				_shake_camera(9.0, 0.18)
+				_shake_camera(12.0, 0.22)
 			else:
-				_shake_camera(3.0, 0.10)
+				_shake_camera(6.0, 0.14)
 			EventBus.damage_dealt.emit(attacker_id, target_id, amount, result.is_crit)
 			# Ultimate gauge: attacker gains for damage dealt, target for damage taken.
 			# Only heroes have ult gauges; enemies are ignored.

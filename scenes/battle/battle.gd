@@ -147,6 +147,11 @@ var _skill_buttons: Array[Button] = []
 var _active_hero_idx: int = -1
 var _selected_enemy_idx: int = 0
 
+# Re-entrancy guard for the crit slow-mo. Without it, AoE crits would
+# stack time_scale assignments and the restoration of one could happen
+# while another's still running.
+var _crit_slowmo_active: bool = false
+
 
 # ─── Setup ───────────────────────────────────────────────────────────
 
@@ -726,7 +731,8 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 			if element >= 0 and element <= 3:
 				_spawn_element_burst(target_unit.get_anchor(&"center"), element)
 			if result.is_crit:
-				_shake_camera(12.0, 0.22)
+				_shake_camera(14.0, 0.24)
+				_crit_punch()
 			else:
 				_shake_camera(6.0, 0.14)
 			EventBus.damage_dealt.emit(attacker_id, target_id, amount, result.is_crit)
@@ -982,6 +988,48 @@ func _play_ult_cutin(ult_name: String, caster_name: String, accent_color: Color)
 	add_child(cutin)
 	cutin.play(ult_name, caster_name, accent_color)
 	await cutin.done
+
+
+## Crit punch-up — short white screen flash + brief Engine.time_scale
+## dip so a critical hit visibly "stops the world" for a beat. Bigger
+## camera shake already fires alongside this from the call site.
+##
+## The slow-mo window is gated by _crit_slowmo_active so back-to-back
+## crits (Pyre Breaker AoE on three goblins, all crit) don't double-set
+## time_scale and leave it stuck.
+func _crit_punch() -> void:
+	_crit_flash()
+	_crit_time_slow()
+
+
+func _crit_flash() -> void:
+	# Tiny one-shot CanvasLayer with a white ColorRect that fades out.
+	# Self-frees after the fade.
+	var layer := CanvasLayer.new()
+	layer.layer = 60
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.color = Color(1, 1, 1, 0.42)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(rect)
+	add_child(layer)
+	var tween := create_tween()
+	tween.tween_property(rect, "modulate:a", 0.0, 0.18) \
+		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	tween.tween_callback(layer.queue_free)
+
+
+func _crit_time_slow() -> void:
+	if _crit_slowmo_active:
+		return
+	_crit_slowmo_active = true
+	Engine.time_scale = 0.4
+	# `ignore_time_scale = true` (4th arg) so the wait runs at wall
+	# time — otherwise the timer would itself be slowed and we'd be
+	# stuck in slow-mo for 0.3s instead of 0.12s.
+	await get_tree().create_timer(0.12, true, false, true).timeout
+	Engine.time_scale = 1.0
+	_crit_slowmo_active = false
 
 
 func _shake_camera(amount: float, duration: float) -> void:

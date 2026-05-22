@@ -62,9 +62,10 @@ path. Each item is small + visible.
 - [x] **Buff/Debuff VFX swapped to pixel art** — replaced the earlier
       code-driven gold ring + jagged spokes with Pimen sprite sheets:
       buff = shield rising, debuff = skull pierced by arrow.
-- [ ] **Crit punch-up** — short screen flash + brief time-slow (Engine.
-      time_scale = 0.5 for ~150 ms) + extra slash overlay. Crits should
-      stop you cold for a beat.
+- [x] **Crit punch-up** — shipped. White flash overlay (CanvasLayer at
+      layer 60, 0.42 alpha) + Engine.time_scale = 0.4 for ~120ms wall
+      time + amplified camera shake (12→14, 0.22→0.24). Re-entrancy
+      guard prevents AoE multi-crits from leaving time_scale stuck.
 - [x] **Heal VFX** — shipped. Green expanding glow + 7 rising shimmer
       motes on the target when Mend (or any heal result) lands.
 - [x] **Buff VFX (Brace / Aegis)** — shipped. Two-pulse gold ring + 10

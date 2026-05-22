@@ -22,8 +22,10 @@ const ENEMY_COUNT := 3
 const TEST_ENEMY_ID := "training_slime"
 
 const LUNGE_DISTANCE := 42.0
-const LUNGE_OUT := 0.12
-const LUNGE_BACK := 0.16
+# Tuned to Mana Seed's recommended attack timing (160/65/65/200ms):
+# impact lands around frame 2 (~225ms), follow-through to ~490ms.
+const LUNGE_OUT := 0.225
+const LUNGE_BACK := 0.27
 const DEFAULT_ATB_COST := 100.0
 
 # Slight color shifts so identical-data slimes are visually distinct.
@@ -463,6 +465,7 @@ func _resolve_skill_enemy_single(skill: SkillData, hero_idx: int, target_idx: in
 	var hero_unit: Node2D = _hero_units[hero_idx]
 	var hero_stats: Dictionary = _heroes_stats[hero_idx]
 	var target_unit: Node2D = _enemy_units[target_idx]
+	hero_unit.play_attack()
 	_lunge(hero_unit, target_unit.global_position)
 	await get_tree().create_timer(LUNGE_OUT).timeout
 	var attacker_eff := _effective_stats(hero_stats, hero_unit.statuses)
@@ -486,6 +489,7 @@ func _resolve_skill_enemy_all(skill: SkillData, hero_idx: int) -> void:
 	for i in alive_idxs:
 		centroid += _enemy_units[i].global_position
 	centroid /= alive_idxs.size()
+	hero_unit.play_attack()
 	_lunge(hero_unit, centroid)
 	await get_tree().create_timer(LUNGE_OUT).timeout
 

@@ -71,6 +71,28 @@ func _ready() -> void:
 	_t = randf() * TAU
 	_click_area.input_event.connect(_on_click_area_input)
 	_ensure_ultimate_gauge()
+	# Auto-return to idle after non-looping animations (attack, hurt, etc.)
+	if _anim_sprite:
+		_anim_sprite.animation_finished.connect(_on_anim_finished)
+
+
+func _on_anim_finished() -> void:
+	# Only return to idle if we're alive and the current anim isn't idle.
+	if _is_dead: return
+	if _anim_sprite == null or _anim_sprite.sprite_frames == null: return
+	if _anim_sprite.animation == &"idle": return
+	if _anim_sprite.sprite_frames.has_animation(&"idle"):
+		_anim_sprite.play(&"idle")
+
+
+## Play the attack swing animation. Non-blocking — animation_finished
+## brings the sprite back to idle automatically.
+## No-op (briefly stalls) for units without an AnimatedSprite2D.
+func play_attack() -> void:
+	if not _using_anim_sprite: return
+	if _anim_sprite == null or _anim_sprite.sprite_frames == null: return
+	if not _anim_sprite.sprite_frames.has_animation(&"attack"): return
+	_anim_sprite.play(&"attack")
 
 
 func _ensure_ultimate_gauge() -> void:

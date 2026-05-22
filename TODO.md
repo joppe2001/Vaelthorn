@@ -17,8 +17,12 @@ short and prune as items ship; don't let it bloat into a wishlist.
 
 ## Progression layer (Phase 3 — interrupted)
 
-- [ ] **3c — Save/Load**: party choice + future state persists across
-      runs. SaveManager is already stubbed since Phase 0 — needs wiring.
+- [x] **3c — Save/Load**: shipped. SaveManager exposes get/set
+      helpers for party and currency; Game.set_party_ids() is the
+      authoritative writer that mirrors to disk. Game.change_scene()
+      autosaves at every scene boundary. Game._ready() defers a
+      _sync_from_save() so the persisted party loads on boot.
+      Default state backfilled on legacy saves missing keys.
 - [ ] **3d — Hero leveling**: XP from battles, level-up animation, stats
       scale per level. Per the leveling formula in docs/03-heroes.md.
 

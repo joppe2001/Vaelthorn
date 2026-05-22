@@ -225,7 +225,9 @@ func _remove_from_slot(idx: int) -> void:
 
 
 func _on_start_pressed() -> void:
-	Game.selected_party_ids = PackedStringArray(_slots)
+	# set_party_ids persists the choice through SaveManager so it's
+	# remembered across runs.
+	Game.set_party_ids(PackedStringArray(_slots))
 	Game.change_scene("res://scenes/battle/battle.tscn")
 
 

@@ -27,9 +27,36 @@ signal state_changed(from: State, to: State)
 
 func _ready() -> void:
 	print("[Game] booted — Vaelthorn ", VERSION)
+	# SaveManager is also an autoload; its _ready may run AFTER ours
+	# depending on declaration order. call_deferred guarantees the save
+	# has been loaded from disk before we read it.
+	call_deferred("_sync_from_save")
+
+
+## Pull persisted state into the in-memory Game fields. Called once at
+## boot via call_deferred. Future state (currency UI, hero unlocks)
+## reads from SaveManager directly — only fields the runtime mutates
+## frequently are mirrored here.
+func _sync_from_save() -> void:
+	var saved_party: PackedStringArray = SaveManager.get_party_ids()
+	if saved_party.size() == PARTY_SIZE:
+		selected_party_ids = saved_party
+		print("[Game] restored party from save: ", selected_party_ids)
+
+
+## Authoritative writer for party selection. Updates the in-memory
+## Game field AND persists to disk. Callers (Party Builder, future
+## auto-select flows) should use this, not direct assignment.
+func set_party_ids(ids: PackedStringArray) -> void:
+	selected_party_ids = ids
+	SaveManager.set_party_ids(ids)
 
 
 func change_scene(path: String) -> void:
+	# Autosave at every scene boundary — covers party builder commit,
+	# battle end, hub return, etc. without each caller having to know
+	# about persistence.
+	SaveManager.save()
 	var err := get_tree().change_scene_to_file(path)
 	if err != OK:
 		push_error("[Game] scene change failed: %s (err=%d)" % [path, err])

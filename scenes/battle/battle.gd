@@ -389,7 +389,7 @@ func _do_hero_turn(idx: int) -> void:
 
 	if hero_unit.statuses.is_stunned():
 		_turn_label.text = "%s — stunned" % hero_data.display_name
-		_spawn_text_popup(hero_unit.global_position + Vector2(0, -260), "STUNNED", Color(0.95, 0.85, 0.3))
+		_spawn_text_popup(hero_unit.get_anchor(&"above"), "STUNNED", Color(0.95, 0.85, 0.3))
 		await get_tree().create_timer(0.7).timeout
 		_atb_heroes[idx] = max(0.0, _atb_heroes[idx] - DEFAULT_ATB_COST)
 	else:
@@ -576,7 +576,7 @@ func _do_enemy_turn(idx: int) -> void:
 	await get_tree().create_timer(0.35).timeout
 
 	if enemy_unit.statuses.is_stunned():
-		_spawn_text_popup(enemy_unit.global_position + Vector2(0, -260), "STUNNED", Color(0.95, 0.85, 0.3))
+		_spawn_text_popup(enemy_unit.get_anchor(&"above"), "STUNNED", Color(0.95, 0.85, 0.3))
 		await get_tree().create_timer(0.7).timeout
 	else:
 		var target_hero_idx: int = _pick_alive_hero_idx()
@@ -654,14 +654,16 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 			# Play hurt recoil if the unit survived the hit (dead anim plays via set_dead)
 			if not killed:
 				target_unit.play_hurt()
-			_spawn_popup(target_unit.global_position + Vector2(0, -200), amount, result.is_crit, result.is_lucky)
+			_spawn_popup(target_unit.get_anchor(&"over_head"), amount, result.is_crit, result.is_lucky)
 			# Slash arc bulges toward the side the sword came FROM.
 			# Attacker to the LEFT of target  -> slash bulges left -> flipped = true (mirror default texture)
 			# Attacker to the RIGHT of target -> slash bulges right -> flipped = false
 			var flipped: bool = target_unit.global_position.x > _attacker_x(attacker_id)
 			var slash_x: int = -20 if flipped else 20
 			if slash_variant != &"":
-				_spawn_slash(target_unit.global_position + Vector2(slash_x, -110), flipped, slash_variant)
+				# Anchor the slash at the target's center, with a small
+				# horizontal nudge in the direction the sword came from.
+				_spawn_slash(target_unit.get_anchor(&"center") + Vector2(slash_x, 0), flipped, slash_variant)
 			if result.is_crit:
 				_shake_camera(12.0, 0.22)
 			else:
@@ -675,18 +677,18 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 				attacker_id, target_id, amount, result.is_crit, result.is_lucky, result.elemental_mult,
 			])
 		"miss":
-			_spawn_text_popup(target_unit.global_position + Vector2(0, -200), "MISS", Color(0.7, 0.7, 0.7))
+			_spawn_text_popup(target_unit.get_anchor(&"over_head"), "MISS", Color(0.7, 0.7, 0.7))
 			print("[Battle] %s -> %s MISSED" % [attacker_id, target_id])
 		"status":
 			var data: StatusEffectData = ContentRegistry.get_status(result.status_id)
 			if data == null:
 				push_error("[Battle] missing status: " + str(result.status_id)); return
 			target_unit.add_status(result.status_id, result.duration, result.power, data)
-			_spawn_text_popup(target_unit.global_position + Vector2(0, -260), data.display_name.to_upper(), data.icon_color)
+			_spawn_text_popup(target_unit.get_anchor(&"above"), data.display_name.to_upper(), data.icon_color)
 			_spawn_status_vfx(target_unit, data)
 			EventBus.status_applied.emit(target_id, result.status_id)
 		"status_resisted":
-			_spawn_text_popup(target_unit.global_position + Vector2(0, -260), "RESIST", Color(0.6, 0.8, 1.0))
+			_spawn_text_popup(target_unit.get_anchor(&"above"), "RESIST", Color(0.6, 0.8, 1.0))
 		"heal":
 			var amount: int = int(result.amount)
 			if target_is_hero:
@@ -695,7 +697,7 @@ func _apply_result(result: Dictionary, attacker_id: String, target_id: String, t
 			else:
 				_enemies_hp[target_idx] = min(int(_enemies_stats[target_idx].hp), _enemies_hp[target_idx] + amount)
 				target_unit.set_hp(_enemies_hp[target_idx], int(_enemies_stats[target_idx].hp))
-			_spawn_text_popup(target_unit.global_position + Vector2(0, -200), "+%d" % amount, Color(0.4, 0.85, 0.4))
+			_spawn_text_popup(target_unit.get_anchor(&"over_head"), "+%d" % amount, Color(0.4, 0.85, 0.4))
 			_spawn_heal_vfx(target_unit)
 		"none":
 			pass
@@ -742,7 +744,7 @@ func _tick_unit_statuses_hero(idx: int) -> void:
 				var amount: int = int(result.amount)
 				_heroes_hp[idx] = max(0, _heroes_hp[idx] - amount)
 				unit.set_hp(_heroes_hp[idx], int(stats.hp))
-				_spawn_dot_popup(unit.global_position + Vector2(0, -200), amount, result.status_id)
+				_spawn_dot_popup(unit.get_anchor(&"over_head"), amount, result.status_id)
 				if _heroes_hp[idx] <= 0:
 					unit.set_dead(true)
 				await get_tree().create_timer(0.20).timeout
@@ -760,7 +762,7 @@ func _tick_unit_statuses_enemy(idx: int) -> void:
 				var amount: int = int(result.amount)
 				_enemies_hp[idx] = max(0, _enemies_hp[idx] - amount)
 				unit.set_hp(_enemies_hp[idx], int(stats.hp))
-				_spawn_dot_popup(unit.global_position + Vector2(0, -200), amount, result.status_id)
+				_spawn_dot_popup(unit.get_anchor(&"over_head"), amount, result.status_id)
 				if _enemies_hp[idx] <= 0:
 					unit.set_dead(true)
 					if _selected_enemy_idx == idx:
@@ -839,14 +841,16 @@ func _spawn_status_vfx(target_unit: Node2D, data: StatusEffectData) -> void:
 	var scene: PackedScene = BUFF_VFX_SCENE if is_buff else DEBUFF_VFX_SCENE
 	var effect := scene.instantiate()
 	_popup_layer.add_child(effect)
-	# Roughly the unit's torso, so the ring frames the upper body.
-	effect.global_position = target_unit.global_position + Vector2(0, -140)
+	# Anchor at the head so the ring frames the upper body, independent
+	# of sprite scale (heroes vs goblins).
+	effect.global_position = target_unit.get_anchor(&"head")
 
 
 func _spawn_heal_vfx(target_unit: Node2D) -> void:
 	var effect := HEAL_VFX_SCENE.instantiate()
 	_popup_layer.add_child(effect)
-	effect.global_position = target_unit.global_position + Vector2(0, -100)
+	# Center on the torso — shimmer rises from there through the head.
+	effect.global_position = target_unit.get_anchor(&"center")
 
 
 ## Spawn the ultimate cut-in overlay, hand it the ult/caster names, and

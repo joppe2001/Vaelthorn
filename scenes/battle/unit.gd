@@ -40,6 +40,12 @@ var _is_selected: bool = false
 var statuses: StatusManager = StatusManager.new()
 var _ultimate_value: float = 0.0
 
+# Cached visual height of the sprite (frame_h * sprite_scale). Populated
+# by bind() and consumed by get_anchor(). Default sized for a 64x64 hero
+# at scale 4; bind() overwrites with the real measurement.
+var _visual_height: float = 256.0
+var _sprite_y_offset: float = -96.0
+
 
 # ─── Ultimate gauge ──────────────────────────────────────────────────
 
@@ -172,6 +178,7 @@ func _process(delta: float) -> void:
 
 func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrames = null, sprite_scale: float = 4.0, sprite_y_offset: float = -96.0) -> void:
 	_name_label.text = unit_name
+	_sprite_y_offset = sprite_y_offset
 
 	if idle_frames != null:
 		_using_anim_sprite = true
@@ -183,17 +190,72 @@ func bind(unit_name: String, color: Color, max_hp: int, idle_frames: SpriteFrame
 		if idle_frames.has_animation(&"idle"):
 			_anim_sprite.animation = &"idle"
 			_anim_sprite.play()
+		# Measure the actual frame height so get_anchor() works for both
+		# 64px Mana Seed heroes and 16px 0x72 enemies.
+		_visual_height = _measure_visual_height(idle_frames, sprite_scale)
 	else:
 		_using_anim_sprite = false
 		_sprite.visible = true
 		_anim_sprite.visible = false
 		_sprite.color = color
 		_base_color = color
+		# Placeholder polygon — use a roughly hero-sized default so popups
+		# don't collide with the placeholder square.
+		_visual_height = 220.0
 
 	_hp_bar.max_value = max_hp
 	_hp_bar.value = max_hp
 	_hp_label.text = "%d / %d" % [max_hp, max_hp]
 	_update_hp_color(max_hp, max_hp)
+
+
+## Pull the first-frame texture out of the idle animation and figure out
+## how tall the sprite renders on screen. Works for AtlasTexture
+## (Mana Seed sheets) and plain Texture2D (0x72 single-frame PNGs).
+## Falls back to the 64*scale default if the frames object is missing
+## metadata.
+func _measure_visual_height(frames: SpriteFrames, sprite_scale: float) -> float:
+	var anim: StringName = &"idle"
+	if not frames.has_animation(anim):
+		return 64.0 * sprite_scale
+	if frames.get_frame_count(anim) <= 0:
+		return 64.0 * sprite_scale
+	var tex: Texture2D = frames.get_frame_texture(anim, 0)
+	if tex == null:
+		return 64.0 * sprite_scale
+	if tex is AtlasTexture:
+		return (tex as AtlasTexture).region.size.y * sprite_scale
+	return tex.get_height() * sprite_scale
+
+
+## World position of a named anchor point on this unit. Lets VFX spawn
+## at semantic locations ("head", "center") without hardcoding pixel
+## offsets that break when sprite scale or character size changes.
+##
+##   feet       — y=0 (unit origin, on the ground)
+##   center     — sprite frame center (torso-ish)
+##   head       — top third of the sprite (where status icons / face sit)
+##   over_head  — just above the head (where damage numbers float)
+##   above      — well above the head (where status banners float)
+##
+## Unknown anchor names log a warning and fall back to feet.
+func get_anchor(anchor: StringName) -> Vector2:
+	var local: Vector2
+	match anchor:
+		&"feet":
+			local = Vector2.ZERO
+		&"center":
+			local = Vector2(0, _sprite_y_offset)
+		&"head":
+			local = Vector2(0, _sprite_y_offset - _visual_height * 0.32)
+		&"over_head":
+			local = Vector2(0, _sprite_y_offset - _visual_height * 0.50)
+		&"above":
+			local = Vector2(0, _sprite_y_offset - _visual_height * 0.70)
+		_:
+			push_warning("[Unit] unknown anchor: %s" % anchor)
+			local = Vector2.ZERO
+	return global_position + local
 
 
 func set_hp(current: int, max_hp: int) -> void:

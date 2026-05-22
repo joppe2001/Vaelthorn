@@ -83,3 +83,6 @@ path. Each item is small + visible.
 - [ ] Pre-commit hooks (gdformat, gdlint, content validation) — promised
       in Phase 0, still not installed.
 - [ ] Refactor checkpoint after Phase 5 (per engineering doc).
+- [x] Unit anchor system — `Unit.get_anchor(&"feet"/"center"/"head"/
+      "over_head"/"above")` so VFX/popups don't hardcode pixel offsets.
+      Auto-sizes for 64px heroes and 16px enemies.

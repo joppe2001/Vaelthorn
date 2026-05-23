@@ -1,9 +1,14 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scenes/hub/hub.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/buildings/castle.png" id="2_castle"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/buildings/tower.png" id="3_tower"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/buildings/house_yellow.png" id="4_party"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/buildings/house_purple.png" id="5_heroes"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hub/terrain/tree.png" id="6_tree"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBar"]
-bg_color = Color(0.07, 0.07, 0.12, 1)
+bg_color = Color(0.07, 0.07, 0.12, 0.85)
 border_color = Color(0.337, 0.424, 0.525, 1)
 border_width_bottom = 1
 content_margin_left = 16.0
@@ -12,7 +17,7 @@ content_margin_top = 10.0
 content_margin_bottom = 10.0
 
 [sub_resource type="StyleBoxFlat" id="StyleFooter"]
-bg_color = Color(0.07, 0.07, 0.12, 1)
+bg_color = Color(0.07, 0.07, 0.12, 0.85)
 border_color = Color(0.337, 0.424, 0.525, 1)
 border_width_top = 1
 content_margin_left = 16.0
@@ -20,19 +25,151 @@ content_margin_right = 16.0
 content_margin_top = 6.0
 content_margin_bottom = 6.0
 
+[sub_resource type="AtlasTexture" id="AT_tree_idle"]
+atlas = ExtResource("6_tree")
+region = Rect2(0, 0, 192, 192)
+
 [node name="Hub" type="Control"]
+texture_filter = 1
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Sky" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.082, 0.082, 0.137, 1)
+color = Color(0.42, 0.66, 0.85, 1)
+
+[node name="Ground" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -260.0
+color = Color(0.36, 0.55, 0.30, 1)
+
+[node name="GroundHighlight" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -260.0
+offset_bottom = -252.0
+color = Color(0.50, 0.68, 0.36, 1)
+
+[node name="Tree1" type="TextureRect" parent="."]
+texture_filter = 1
+layout_mode = 1
+offset_left = 30.0
+offset_top = 360.0
+offset_right = 222.0
+offset_bottom = 552.0
+texture = SubResource("AT_tree_idle")
+mouse_filter = 2
+
+[node name="Tree2" type="TextureRect" parent="."]
+texture_filter = 1
+layout_mode = 1
+offset_left = 1080.0
+offset_top = 370.0
+offset_right = 1272.0
+offset_bottom = 562.0
+texture = SubResource("AT_tree_idle")
+mouse_filter = 2
+
+[node name="PartyBtn" type="TextureButton" parent="."]
+texture_filter = 1
+layout_mode = 1
+offset_left = 200.0
+offset_top = 318.0
+offset_right = 328.0
+offset_bottom = 510.0
+texture_normal = ExtResource("4_party")
+tooltip_text = "Party Builder"
+
+[node name="PartyLabel" type="Label" parent="."]
+layout_mode = 1
+offset_left = 180.0
+offset_top = 512.0
+offset_right = 348.0
+offset_bottom = 532.0
+text = "PARTY"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.98, 0.95, 0.85, 1)
+mouse_filter = 2
+
+[node name="BattleBtn" type="TextureButton" parent="."]
+texture_filter = 1
+layout_mode = 1
+offset_left = 480.0
+offset_top = 254.0
+offset_right = 800.0
+offset_bottom = 510.0
+texture_normal = ExtResource("2_castle")
+tooltip_text = "Enter Battle"
+
+[node name="BattleLabel" type="Label" parent="."]
+layout_mode = 1
+offset_left = 480.0
+offset_top = 512.0
+offset_right = 800.0
+offset_bottom = 538.0
+text = "BATTLE"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.976, 0.78, 0.31, 1)
+mouse_filter = 2
+
+[node name="UpgradeBtn" type="TextureButton" parent="."]
+texture_filter = 1
+layout_mode = 1
+offset_left = 870.0
+offset_top = 254.0
+offset_right = 998.0
+offset_bottom = 510.0
+texture_normal = ExtResource("3_tower")
+tooltip_text = "Upgrade Heroes"
+
+[node name="UpgradeLabel" type="Label" parent="."]
+layout_mode = 1
+offset_left = 850.0
+offset_top = 512.0
+offset_right = 1018.0
+offset_bottom = 532.0
+text = "UPGRADE"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.98, 0.95, 0.85, 1)
+mouse_filter = 2
+
+[node name="HeroesBtn" type="TextureButton" parent="."]
+texture_filter = 1
+layout_mode = 1
+offset_left = 1040.0
+offset_top = 318.0
+offset_right = 1168.0
+offset_bottom = 510.0
+texture_normal = ExtResource("5_heroes")
+tooltip_text = "Hero Roster"
+
+[node name="HeroesLabel" type="Label" parent="."]
+layout_mode = 1
+offset_left = 1020.0
+offset_top = 512.0
+offset_right = 1188.0
+offset_bottom = 532.0
+text = "HEROES"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.98, 0.95, 0.85, 1)
+mouse_filter = 2
 
 [node name="TopBar" type="PanelContainer" parent="."]
 layout_mode = 1
@@ -71,65 +208,7 @@ size_flags_horizontal = 3
 layout_mode = 2
 text = "v0.0.1"
 theme_override_font_sizes/font_size = 12
-theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
-
-[node name="Center" type="CenterContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = 56.0
-offset_bottom = -36.0
-
-[node name="VBox" type="VBoxContainer" parent="Center"]
-layout_mode = 2
-theme_override_constants/separation = 18
-
-[node name="Heading" type="Label" parent="Center/VBox"]
-layout_mode = 2
-text = "VAELTHORN"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 56
-theme_override_colors/font_color = Color(0.976, 0.78, 0.31, 1)
-
-[node name="Sub" type="Label" parent="Center/VBox"]
-layout_mode = 2
-text = "Pixel-art turn-based RPG"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
-
-[node name="GapBeforeCTA" type="Control" parent="Center/VBox"]
-custom_minimum_size = Vector2(0, 16)
-layout_mode = 2
-
-[node name="BattleBtn" type="Button" parent="Center/VBox"]
-layout_mode = 2
-size_flags_horizontal = 4
-custom_minimum_size = Vector2(360, 72)
-text = "▶  ENTER BATTLE"
-theme_override_font_sizes/font_size = 22
-
-[node name="GapAfterCTA" type="Control" parent="Center/VBox"]
-custom_minimum_size = Vector2(0, 12)
-layout_mode = 2
-
-[node name="SecondaryRow" type="HBoxContainer" parent="Center/VBox"]
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_constants/separation = 12
-
-[node name="PartyBtn" type="Button" parent="Center/VBox/SecondaryRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(174, 60)
-text = "PARTY"
-theme_override_font_sizes/font_size = 18
-
-[node name="HeroesBtn" type="Button" parent="Center/VBox/SecondaryRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(174, 60)
-text = "HEROES"
-theme_override_font_sizes/font_size = 18
 
 [node name="Footer" type="PanelContainer" parent="."]
 layout_mode = 1
@@ -158,7 +237,16 @@ layout_mode = 2
 text = "  < Back to Title  "
 theme_override_font_sizes/font_size = 12
 
-[connection signal="pressed" from="Center/VBox/BattleBtn" to="." method="_on_battle_pressed"]
-[connection signal="pressed" from="Center/VBox/SecondaryRow/PartyBtn" to="." method="_on_party_pressed"]
-[connection signal="pressed" from="Center/VBox/SecondaryRow/HeroesBtn" to="." method="_on_heroes_pressed"]
+[connection signal="pressed" from="PartyBtn" to="." method="_on_party_pressed"]
+[connection signal="pressed" from="BattleBtn" to="." method="_on_battle_pressed"]
+[connection signal="pressed" from="UpgradeBtn" to="." method="_on_upgrade_pressed"]
+[connection signal="pressed" from="HeroesBtn" to="." method="_on_heroes_pressed"]
 [connection signal="pressed" from="Footer/HBox/BackBtn" to="." method="_on_back_pressed"]
+[connection signal="mouse_entered" from="PartyBtn" to="." method="_on_btn_hover" binds= [ "PartyBtn", true ]]
+[connection signal="mouse_exited" from="PartyBtn" to="." method="_on_btn_hover" binds= [ "PartyBtn", false ]]
+[connection signal="mouse_entered" from="BattleBtn" to="." method="_on_btn_hover" binds= [ "BattleBtn", true ]]
+[connection signal="mouse_exited" from="BattleBtn" to="." method="_on_btn_hover" binds= [ "BattleBtn", false ]]
+[connection signal="mouse_entered" from="UpgradeBtn" to="." method="_on_btn_hover" binds= [ "UpgradeBtn", true ]]
+[connection signal="mouse_exited" from="UpgradeBtn" to="." method="_on_btn_hover" binds= [ "UpgradeBtn", false ]]
+[connection signal="mouse_entered" from="HeroesBtn" to="." method="_on_btn_hover" binds= [ "HeroesBtn", true ]]
+[connection signal="mouse_exited" from="HeroesBtn" to="." method="_on_btn_hover" binds= [ "HeroesBtn", false ]]

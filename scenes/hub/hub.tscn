@@ -1,6 +1,24 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scenes/hub/hub.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBar"]
+bg_color = Color(0.07, 0.07, 0.12, 1)
+border_color = Color(0.337, 0.424, 0.525, 1)
+border_width_bottom = 1
+content_margin_left = 16.0
+content_margin_right = 16.0
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleFooter"]
+bg_color = Color(0.07, 0.07, 0.12, 1)
+border_color = Color(0.337, 0.424, 0.525, 1)
+border_width_top = 1
+content_margin_left = 16.0
+content_margin_right = 16.0
+content_margin_top = 6.0
+content_margin_bottom = 6.0
 
 [node name="Hub" type="Control"]
 layout_mode = 3
@@ -20,86 +38,127 @@ color = Color(0.082, 0.082, 0.137, 1)
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 40.0
+offset_bottom = 56.0
+theme_override_styles/panel = SubResource("StyleBar")
 
 [node name="HBox" type="HBoxContainer" parent="TopBar"]
 layout_mode = 2
+theme_override_constants/separation = 22
 
-[node name="Title" type="Label" parent="TopBar/HBox"]
+[node name="GoldLabel" type="Label" parent="TopBar/HBox"]
+layout_mode = 2
+text = "Gold: 0"
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.976, 0.78, 0.31, 1)
+
+[node name="GemsLabel" type="Label" parent="TopBar/HBox"]
+layout_mode = 2
+text = "Gems: 0"
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.55, 0.83, 0.94, 1)
+
+[node name="StaminaLabel" type="Label" parent="TopBar/HBox"]
+layout_mode = 2
+text = "Stamina: 0"
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.45, 0.85, 0.55, 1)
+
+[node name="Filler" type="Control" parent="TopBar/HBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "  Vaelthorn — Hub"
-theme_override_font_sizes/font_size = 16
 
-[node name="FPSLabel" type="Label" parent="TopBar/HBox"]
+[node name="VersionLabel" type="Label" parent="TopBar/HBox"]
 layout_mode = 2
-text = "FPS: --"
-theme_override_font_sizes/font_size = 14
-
-[node name="Sep" type="Control" parent="TopBar/HBox"]
-custom_minimum_size = Vector2(16, 0)
-layout_mode = 2
-
-[node name="StateLabel" type="Label" parent="TopBar/HBox"]
-layout_mode = 2
-text = "State: --"
-theme_override_font_sizes/font_size = 14
-
-[node name="Sep2" type="Control" parent="TopBar/HBox"]
-custom_minimum_size = Vector2(16, 0)
-layout_mode = 2
+text = "v0.0.1"
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_top = 56.0
+offset_bottom = -36.0
 
 [node name="VBox" type="VBoxContainer" parent="Center"]
 layout_mode = 2
+theme_override_constants/separation = 18
 
 [node name="Heading" type="Label" parent="Center/VBox"]
 layout_mode = 2
-text = "Hub"
+text = "VAELTHORN"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 56
+theme_override_colors/font_color = Color(0.976, 0.78, 0.31, 1)
 
 [node name="Sub" type="Label" parent="Center/VBox"]
 layout_mode = 2
-text = "Phase 1 — battle MVP. Heroes, gacha, guilds coming in later phases."
+text = "Pixel-art turn-based RPG"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 16
-modulate = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
 
-[node name="Spacer" type="Control" parent="Center/VBox"]
-custom_minimum_size = Vector2(0, 40)
+[node name="GapBeforeCTA" type="Control" parent="Center/VBox"]
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
 
 [node name="BattleBtn" type="Button" parent="Center/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
-custom_minimum_size = Vector2(240, 56)
-text = "  Enter Battle  "
+custom_minimum_size = Vector2(360, 72)
+text = "▶  ENTER BATTLE"
+theme_override_font_sizes/font_size = 22
 
-[node name="Spacer2" type="Control" parent="Center/VBox"]
+[node name="GapAfterCTA" type="Control" parent="Center/VBox"]
 custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
-[node name="HeroesBtn" type="Button" parent="Center/VBox"]
+[node name="SecondaryRow" type="HBoxContainer" parent="Center/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
-custom_minimum_size = Vector2(240, 56)
-text = "  Hero Roster  "
+theme_override_constants/separation = 12
 
-[node name="Spacer3" type="Control" parent="Center/VBox"]
-custom_minimum_size = Vector2(0, 16)
+[node name="PartyBtn" type="Button" parent="Center/VBox/SecondaryRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(174, 60)
+text = "PARTY"
+theme_override_font_sizes/font_size = 18
+
+[node name="HeroesBtn" type="Button" parent="Center/VBox/SecondaryRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(174, 60)
+text = "HEROES"
+theme_override_font_sizes/font_size = 18
+
+[node name="Footer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+theme_override_styles/panel = SubResource("StyleFooter")
+
+[node name="HBox" type="HBoxContainer" parent="Footer"]
 layout_mode = 2
 
-[node name="BackBtn" type="Button" parent="Center/VBox"]
+[node name="FPSLabel" type="Label" parent="Footer/HBox"]
 layout_mode = 2
-size_flags_horizontal = 4
+text = "FPS: --"
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.55, 0.55, 0.65, 1)
+
+[node name="Filler" type="Control" parent="Footer/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BackBtn" type="Button" parent="Footer/HBox"]
+layout_mode = 2
 text = "  < Back to Title  "
+theme_override_font_sizes/font_size = 12
 
 [connection signal="pressed" from="Center/VBox/BattleBtn" to="." method="_on_battle_pressed"]
-[connection signal="pressed" from="Center/VBox/HeroesBtn" to="." method="_on_heroes_pressed"]
-[connection signal="pressed" from="Center/VBox/BackBtn" to="." method="_on_back_pressed"]
+[connection signal="pressed" from="Center/VBox/SecondaryRow/PartyBtn" to="." method="_on_party_pressed"]
+[connection signal="pressed" from="Center/VBox/SecondaryRow/HeroesBtn" to="." method="_on_heroes_pressed"]
+[connection signal="pressed" from="Footer/HBox/BackBtn" to="." method="_on_back_pressed"]
